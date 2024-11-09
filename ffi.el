@@ -33,11 +33,11 @@
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
 (defmacro define-ffi-library (symbol name)
-  (let ((library (cl-gensym)))
-    (set library nil)
-    `(defun ,symbol ()
-       (or ,library
-           (setq ,library (ffi--dlopen (locate-library ,name)))))))
+  `(progn
+     (defvar ,symbol nil)
+     (defun ,symbol ()
+       (or ,symbol
+           (setq ,symbol (ffi--dlopen (locate-library ,name)))))))
 
 (defmacro define-ffi-function (name c-name return-type arg-types library)
   (declare (indent defun))
@@ -46,14 +46,15 @@
          (arg-types (mapcar #'symbol-value arg-types))
          (arg-names (mapcar (lambda (_ignore) (cl-gensym)) arg-types))
          (arg-types (vconcat arg-types))
-         (function (cl-gensym))
+         (sym (intern (concat "ffi-fun-" c-name)))
          (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
-    (set function nil)
-    `(defun ,name (,@arg-names)
-       (unless ,function
-         (setq ,function (ffi--dlsym ,c-name (,library))))
-       ;; FIXME do we even need a separate prep?
-       (ffi--call ,cif ,function ,@arg-names))))
+    `(progn
+       (defvar ,sym nil)
+       (defun ,name (,@arg-names)
+         (unless ,sym
+           (setq ,sym (ffi--dlsym ,c-name (,library))))
+         ;; FIXME do we even need a separate prep?
+         (ffi--call ,cif ,sym ,@arg-names)))))
 
 (defun ffi-lambda (function-pointer return-type arg-types)
   (let ((cif (ffi--prep-cif return-type (vconcat arg-types))))
