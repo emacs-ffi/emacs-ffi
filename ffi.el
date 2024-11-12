@@ -28,7 +28,7 @@
 
 (require 'cl-macs)
 
-(module-load "ffi-module.so")
+(eval-and-compile (module-load "ffi-module.so"))
 
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
