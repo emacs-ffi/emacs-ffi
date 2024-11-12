@@ -76,32 +76,28 @@
 
 (defun ffi--struct-union-helper (name slots definer-function layout-function)
   (cl-assert (symbolp name))
-  (let* ((docstring (if (stringp (car slots))
-                        (pop slots)))
-         (conc-name (concat (symbol-name name) "-"))
-         (result-forms ())
+  (let* ((docstring (and (stringp (car slots))
+                         (pop slots)))
          (field-types (mapcar (lambda (slot)
                                 (cl-assert (eq (cadr slot) :type))
                                 (symbol-value (cl-caddr slot)))
                               slots))
          (field-offsets (funcall layout-function field-types)))
-    (push `(defvar ,name (apply #',definer-function ',field-types)
-             ,docstring)
-          result-forms)
-    (cl-mapc
-     (lambda (slot type offset)
-       (let ((getter-name (intern (concat conc-name
-                                          (symbol-name (car slot)))))
-             (offsetter (if (> offset 0)
-                            `(ffi-pointer+ object ,offset)
-                          'object)))
-         ;; One benefit of using defsubst here is that we don't have
-         ;; to provide a GV setter.
-         (push `(cl-defsubst ,getter-name (object)
-                  (ffi--mem-ref ,offsetter ,type))
-               result-forms)))
-     slots field-types field-offsets)
-    (cons 'progn (nreverse result-forms))))
+    `(progn
+       (defvar ,name
+         (apply #',definer-function ',field-types)
+         ,docstring)
+       ,@(cl-mapcar
+          (lambda (slot type offset)
+            (let ((getter-name (intern (format "%s-%s" name (car slot))))
+                  (offsetter (if (> offset 0)
+                                 `(ffi-pointer+ object ,offset)
+                               'object)))
+              ;; One benefit of using cl-defsubst here is that we don't
+              ;; have to provide a GV setter.
+              `(cl-defsubst ,getter-name (object)
+                 (ffi--mem-ref ,offsetter ,type))))
+          slots field-types field-offsets))))
 
 (defmacro define-ffi-struct (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
