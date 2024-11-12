@@ -66,12 +66,10 @@
 
 (defun ffi--lay-out-struct (types)
   (let ((offset 0))
-    (mapcar (lambda (this-type)
-              (setf offset (ffi--align offset
-                                       (ffi--type-alignment this-type)))
-              (let ((here offset))
-                (cl-incf offset (ffi--type-size this-type))
-                here))
+    (mapcar (lambda (type)
+              (prog1
+                  (setq offset (ffi--align offset (ffi--type-alignment type)))
+                (cl-incf offset (ffi--type-size type))))
             types)))
 
 (defun ffi--struct-union-helper (name slots definer-function layout-function)
