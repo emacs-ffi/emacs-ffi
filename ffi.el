@@ -41,11 +41,10 @@
 
 (defmacro define-ffi-function (name c-name return-type arg-types library)
   (declare (indent defun))
-  (let* (;; Turn variable references into actual types; while keeping
-         ;; keywords the same.
-         (arg-types (mapcar #'symbol-value arg-types))
-         (arg-names (mapcar (lambda (_ignore) (cl-gensym)) arg-types))
-         (arg-types (vconcat arg-types))
+  ;; Turn variable references into actual types; while keeping keywords
+  ;; the same.
+  (let* ((arg-names (mapcar (lambda (_) (cl-gensym)) arg-types))
+         (arg-types (vconcat (mapcar #'symbol-value arg-types)))
          (sym (intern (concat "ffi-fun-" c-name)))
          (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
     `(progn
