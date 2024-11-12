@@ -43,17 +43,18 @@
   (declare (indent defun))
   ;; Turn variable references into actual types; while keeping keywords
   ;; the same.
-  (let* ((arg-names (mapcar (lambda (_) (cl-gensym)) arg-types))
+  (let* ((n 0)
+         (args (mapcar (lambda (_) (intern (format "arg%d" (cl-incf n)))) arg-types))
          (arg-types (vconcat (mapcar #'symbol-value arg-types)))
          (sym (intern (concat "ffi-fun-" c-name)))
          (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
     `(progn
        (defvar ,sym nil)
-       (defun ,name (,@arg-names)
+       (defun ,name (,@args)
          (unless ,sym
            (setq ,sym (ffi--dlsym ,c-name (,library))))
          ;; FIXME do we even need a separate prep?
-         (ffi--call ,cif ,sym ,@arg-names)))))
+         (ffi--call ,cif ,sym ,@args)))))
 
 (defun ffi-lambda (function-pointer return-type arg-types)
   (let ((cif (ffi--prep-cif return-type (vconcat arg-types))))
