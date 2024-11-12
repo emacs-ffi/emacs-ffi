@@ -28,7 +28,7 @@
 
 (require 'cl-macs)
 
-(eval-and-compile (module-load "ffi-module.so"))
+(eval-and-compile (module-load (locate-library "ffi-module")))
 
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
@@ -37,7 +37,7 @@
     (set library nil)
     `(defun ,symbol ()
        (or ,library
-           (setq ,library (ffi--dlopen ,name))))))
+           (setq ,library (ffi--dlopen (locate-library ,name)))))))
 
 (defmacro define-ffi-function (name c-name return-type arg-types library)
   (declare (indent defun))
