@@ -1,0 +1,43 @@
+name: 'Compile'
+permissions: {}
+on: [push, pull_request]
+jobs:
+  main:
+    name: 'Compile'
+#   runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    needs: matrix
+    strategy:
+      fail-fast: false
+      matrix:
+#       os: [ubuntu-latest, macos-latest, windows-latest]
+        emacs:
+          - 28.1
+          - 29.4
+          - release-snapshot
+          - snapshot
+    steps:
+      - name: 'Install Emacs'
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs }}
+      - name: 'Install dependencies'
+        run: |
+          sudo apt-get install build-essential libffi-dev libltdl-dev
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: 'Compile module'
+        run: |
+          make module
+      - name: 'Compile lisp'
+        run: |
+          make lisp
+      - name: 'Compile lisp (byte-compile-error-on-warn)'
+#       if: ${{ vars.byte_compile_error_on_warn != 'nil' }}
+        run: |
+          make EMACS_ARGS="--eval '(progn \
+          (setq byte-compile-error-on-warn t) \
+          ${{ vars.compile_error_settings }})'" redo-lisp
+#     - name: 'Test'

@@ -28,32 +28,34 @@
 
 (require 'cl-macs)
 
-(module-load "ffi-module.so")
+(eval-and-compile (module-load (locate-library "ffi-module")))
 
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
 (defmacro define-ffi-library (symbol name)
-  (let ((library (cl-gensym)))
-    (set library nil)
-    `(defun ,symbol ()
-       (or ,library
-           (setq ,library (ffi--dlopen ,name))))))
+  `(progn
+     (defvar ,symbol nil)
+     (defun ,symbol ()
+       (or ,symbol
+           (setq ,symbol (ffi--dlopen (locate-library ,name)))))))
 
 (defmacro define-ffi-function (name c-name return-type arg-types library)
   (declare (indent defun))
-  (let* (;; Turn variable references into actual types; while keeping
-         ;; keywords the same.
-         (arg-types (mapcar #'symbol-value arg-types))
-         (arg-names (mapcar (lambda (_ignore) (cl-gensym)) arg-types))
-         (arg-types (vconcat arg-types))
-         (function (cl-gensym))
-         (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
-    (set function nil)
-    `(defun ,name (,@arg-names)
-       (unless ,function
-         (setq ,function (ffi--dlsym ,c-name (,library))))
-       ;; FIXME do we even need a separate prep?
-       (ffi--call ,cif ,function ,@arg-names))))
+  ;; Turn variable references into actual types; while keeping keywords
+  ;; the same.
+  (let* ((n 0)
+         (args (mapcar (lambda (_) (intern (format "arg%d" (cl-incf n)))) arg-types))
+         (sym (intern (concat "ffi-fun-" c-name))))
+    `(progn
+       (defvar ,sym nil)
+       (defun ,name (,@args)
+         (unless ,sym
+           (setq ,sym (ffi--dlsym ,c-name (,library))))
+         ;; FIXME do we even need a separate prep?
+         (ffi--call (ffi--prep-cif ,return-type
+                                   (vconcat
+                                    (mapcar #'symbol-value ',arg-types)))
+                    ,sym ,@args)))))
 
 (defun ffi-lambda (function-pointer return-type arg-types)
   (let ((cif (ffi--prep-cif return-type (vconcat arg-types))))
@@ -65,42 +67,36 @@
 
 (defun ffi--lay-out-struct (types)
   (let ((offset 0))
-    (mapcar (lambda (this-type)
-              (setf offset (ffi--align offset
-                                       (ffi--type-alignment this-type)))
-              (let ((here offset))
-                (cl-incf offset (ffi--type-size this-type))
-                here))
+    (mapcar (lambda (type)
+              (prog1
+                  (setq offset (ffi--align offset (ffi--type-alignment type)))
+                (cl-incf offset (ffi--type-size type))))
             types)))
 
 (defun ffi--struct-union-helper (name slots definer-function layout-function)
   (cl-assert (symbolp name))
-  (let* ((docstring (if (stringp (car slots))
-                        (pop slots)))
-         (conc-name (concat (symbol-name name) "-"))
-         (result-forms ())
+  (let* ((docstring (and (stringp (car slots))
+                         (pop slots)))
          (field-types (mapcar (lambda (slot)
                                 (cl-assert (eq (cadr slot) :type))
                                 (symbol-value (cl-caddr slot)))
                               slots))
-         (the-type (apply definer-function field-types))
          (field-offsets (funcall layout-function field-types)))
-    (push `(defvar ,name ,the-type ,docstring)
-          result-forms)
-    (cl-mapc
-     (lambda (slot type offset)
-       (let ((getter-name (intern (concat conc-name
-                                          (symbol-name (car slot)))))
-             (offsetter (if (> offset 0)
-                            `(ffi-pointer+ object ,offset)
-                          'object)))
-         ;; One benefit of using defsubst here is that we don't have
-         ;; to provide a GV setter.
-         (push `(cl-defsubst ,getter-name (object)
-                  (ffi--mem-ref ,offsetter ,type))
-               result-forms)))
-     slots field-types field-offsets)
-    (cons 'progn (nreverse result-forms))))
+    `(progn
+       (defvar ,name
+         (apply #',definer-function ',field-types)
+         ,docstring)
+       ,@(cl-mapcar
+          (lambda (slot type offset)
+            (let ((getter-name (intern (format "%s-%s" name (car slot))))
+                  (offsetter (if (> offset 0)
+                                 `(ffi-pointer+ object ,offset)
+                               'object)))
+              ;; One benefit of using cl-defsubst here is that we don't
+              ;; have to provide a GV setter.
+              `(cl-defsubst ,getter-name (object)
+                 (ffi--mem-ref ,offsetter ,type))))
+          slots field-types field-offsets))))
 
 (defmacro define-ffi-struct (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
@@ -126,10 +122,9 @@ SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
 (defmacro define-ffi-array (name type length &optional docstring)
   ;; This is a hack until libffi gives us direct support.
   (declare (indent defun))
-  (let ((type-description
-         (apply #'ffi--define-struct
-                (make-list (eval length) (symbol-value type)))))
-    `(defvar ,name ,type-description ,docstring)))
+  `(defvar ,name
+     (apply #'ffi--define-struct (make-list ,length ,type))
+     ,docstring))
 
 (defsubst ffi-aref (array type index)
   (ffi--mem-ref (ffi-pointer+ array (* index (ffi--type-size type))) type))
