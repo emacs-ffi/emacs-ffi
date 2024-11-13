@@ -52,8 +52,9 @@
          (unless ,sym
            (setq ,sym (ffi--dlsym ,c-name (,library))))
          ;; FIXME do we even need a separate prep?
-         (ffi--call (ffi--prep-cif (symbol-value ,return-type)
-                                   ,(vconcat (mapcar #'symbol-value arg-types)))
+         (ffi--call (ffi--prep-cif ,return-type
+                                   (vconcat
+                                    (mapcar #'symbol-value ',arg-types)))
                     ,sym ,@args)))))
 
 (defun ffi-lambda (function-pointer return-type arg-types)
