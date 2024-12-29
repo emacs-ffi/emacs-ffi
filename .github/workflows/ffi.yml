@@ -29,7 +29,6 @@ jobs:
 
     - name: Run gsl-ffi.el
       run: |
-        ls /usr/lib/x86_64-linux-gnu/
         make gsl || true
 
     - name: Run gsl-ffi.org
