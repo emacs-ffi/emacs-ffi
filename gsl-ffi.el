@@ -1,6 +1,6 @@
 (require 'ffi)
 
-(define-ffi-library gsl "/usr/lib/x86_64-linux-gnu/libgsl.so.27")
+(define-ffi-library gsl "/lib/x86_64-linux-gnu/libgsl.so.27")
 
 (define-ffi-function gsl-sf-bessel-J0 "gsl_sf_bessel_J0"
   :double
