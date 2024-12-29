@@ -15,6 +15,8 @@
 
 ;;; Code:
 
+(message "%S" load-path)
+
 (require 'ert)
 (require 'ffi)
 
