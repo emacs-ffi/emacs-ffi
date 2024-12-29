@@ -7,7 +7,9 @@ First you define the library. We use the GNU Scientific library here (https://ww
 #+BEGIN_SRC emacs-lisp
 (require 'ffi)
 
-(define-ffi-library gsl "/opt/homebrew/lib/libgsl.dylib")
+(define-ffi-library gsl (if (eq system-type 'darwin)
+			    "/opt/homebrew/lib/libgsl.dylib"
+			  "libgsl"))
 #+END_SRC
 
 #+RESULTS:
