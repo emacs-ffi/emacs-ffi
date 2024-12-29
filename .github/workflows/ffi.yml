@@ -28,6 +28,7 @@ jobs:
         make check || true
 
     - name: Run gslffi tests
-      run: |       
+      run: |
+        ls /lib/x86_64-linux-gnu/libgsl*
         make gsl
 
