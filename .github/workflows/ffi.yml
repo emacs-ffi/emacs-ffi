@@ -27,3 +27,7 @@ jobs:
         ls
         make check
 
+    - name: Run gslffi tests
+      run: |       
+        make gsl
+
