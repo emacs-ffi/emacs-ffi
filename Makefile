@@ -47,3 +47,6 @@ clean:
 
 gsl:
 	emacs --batch -L . -l gsl-ffi.el
+
+gsl-org:
+	emacs --batch -L . --eval="(progn (find-file \"gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
