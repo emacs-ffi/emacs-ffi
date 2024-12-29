@@ -44,3 +44,6 @@ test.o: test.c
 
 clean:
 	-rm -f ffi-module.o ffi-module.so test.o test.so
+
+gsl:
+	emacs --batch -L . -l gsl-ffi.el
