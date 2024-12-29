@@ -24,5 +24,6 @@ jobs:
     - name: Run ffi tests
       run: |       
         make
+        ls
         make check
 
