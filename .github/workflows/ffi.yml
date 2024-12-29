@@ -27,8 +27,13 @@ jobs:
         ls
         make check || true
 
-    - name: Run gslffi tests
+    - name: Run gsl-ffi.el
+      run: |
+        ls /usr/lib/x86_64-linux-gnu/libgsl*
+        make gsl || true
+
+    - name: Run gsl-ffi.org
       run: |
         ls /lib/x86_64-linux-gnu/libgsl*
-        make gsl
+        make gsl-org || true
 
