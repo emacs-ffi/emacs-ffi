@@ -23,4 +23,4 @@
 (let ((x 5.0))
   (message "J0(%s)=%s" x (gsl-sf-bessel-J0-v2 x)))
 
-(describe-function "gsl-sf-bessel-J0-v2")
+(describe-function 'gsl-sf-bessel-J0-v2)
