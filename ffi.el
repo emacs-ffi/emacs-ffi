@@ -99,7 +99,7 @@ An overall docstring is created for the function from the arg and return docstri
 				    ((keywordp arg)
 				     "")
 				    ((and (listp arg) (= 3 (length arg)))
-				     (third arg))
+				     (cl-third arg))
 				    (t "")))
 				 args))
 	 ;; Combine all the arg docstrings into one string
