@@ -1,0 +1,28 @@
+name: emacs-ffi
+
+on: [push]
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest    
+    strategy:
+      fail-fast: false
+
+    steps:
+      
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      run: sudo apt-get update && sudo apt-get install -y emacs libltdl7 libltdl-dev libffi-dev 
+      
+    - name: About Emacs
+      run: |
+        emacs --version
+        emacs -batch --eval '(message "hello")'
+
+    - name: Run ffi tests
+      run: |       
+        make
+        make check
+
