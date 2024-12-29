@@ -1,0 +1,315 @@
+#+title: FFI for Emacs.  
+
+It is based on libffi and relies on the dynamic module support in order to be loaded into Emacs. It is relatively full-featured, but for the time being low-level.
+
+This file is adapted from https://github.com/tromey/emacs-ffi.
+
+* Setting up the environment
+
+The libltdl library is used to find libraries. You may need to set some environment variables to find your libraries. For the bash shell, you might need to do something like this. 
+
+#+BEGIN_SRC sh
+export LTDL_LIBRARY_PATH=$LTDL_LIBRARY_PATH:/path/to/your/libraries
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/your/libraries
+#+END_SRC
+
+* Using ffi.el
+
+Make sure that ffi.el is on your load path. Then just require it.
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path ".")
+(require 'ffi)
+#+END_SRC
+
+#+RESULTS:
+: ffi
+
+You should build the test library (make test)
+
+** Define the ffi library
+
+- (define-ffi-library SYMBOL NAME).  Used to define a function that lazily loads a library.
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-library test.so "/Users/jkitchin/Dropbox/emacs/projects/projects/emacs-ffi-modules/emacs-ffi-kitchinhub/test.so")
+#+END_SRC
+
+#+RESULTS:
+: test.so
+
+ffi-module uses libltdl (from libtool), which will automatically supply the correct extension if none is specified, so it's generally best to leave off the ~.so~. The library name is usually sufficient, but on a Mac, I find I have to use the full path sometimes.
+
+** Defining ffi functions
+
+We define lisp accessible functions like this:
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-function test-function "test_function" :int nil test.so)
+(test-function) ;=> 27
+#+END_SRC
+
+#+RESULTS:
+: 27
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-function test-function-char "test_function" :char nil test.so)
+(test-function-char) ;=> 27
+#+END_SRC
+
+#+RESULTS:
+: 27
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-function test-c-string "test_c_string" :pointer nil test.so)
+(test-c-string) ; => user-ptr
+#+END_SRC
+
+#+RESULTS:
+: #<user-ptr ptr=0x16d34ff98 finalizer=0x369f13094>
+
+
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-function test-add "test_add" :int [:int :int] test.so)
+
+(test-add 23 -23) ;=> 0
+#+END_SRC
+
+#+RESULTS:
+: 0
+
+The docstring for this is not that great.
+
+#+BEGIN_SRC emacs-lisp
+(describe-function 'test-add)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+test-add is a interpreted-function.
+
+(test-add G121 G122)
+
+
+
+G121 (:int) 
+G122 (:int) 
+
+Returns:  (:int)
+
+#+end_example
+
+
+Note there is a more sophisticated way to define a function that leads to better docstrings. 
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-function test-add "test_add"
+  (:int "The sum of two numbers")
+  ((:int a "A: The first number")
+   (:int b "B: The second number"))
+  test.so
+  "Return the sum of A and B.")
+
+(test-add 23 -23) ;=> 0
+#+END_SRC
+
+#+RESULTS:
+: 0
+
+The benefit of this more verbose signature is better docstrings for the functions in elisp.
+
+#+BEGIN_SRC emacs-lisp
+(describe-function 'test-add)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+test-add is a interpreted-function.
+
+(test-add A B)
+
+Return the sum of A and B.
+
+A (:int) A: The first number
+B (:int) B: The second number
+
+Returns: The sum of two numbers (:int)
+
+#+end_example
+
+
+** C-function to elisp function
+
+~(ffi-lambda FUNCTION RETURN-TYPE ARG-TYPES)~. Take a C function pointer and a description of its type, and return a Lisp function. Unlike ~define-ffi-function~, this is not a macro. You may wish to cache these as each call to ~ffi-lambda~ makes a new CIF.
+
+** Make a closure
+
+~(ffi-make-closure CIF FUNCTION)~. Make a C pointer to the Lisp function. This pointer can then be passed to C functions that need a pointer-to-function argument, and FUNCTION will be called with whatever arguments are passed in.
+
+  CIF is a CIF as returned by ~ffi--prep-cif~. It describes the function's type (as needed by C).
+
+  This returns a C function pointer, wrapped in the usual way as a user-pointer object.
+
+#+BEGIN_SRC emacs-lisp
+(defun callback (arg)
+  (1+ arg))
+
+(define-ffi-function test-call-callback "test_call_callback"
+  :int [:pointer] test.so)
+
+(let* ((cif (ffi--prep-cif :int [:int]))
+       (pointer-to-callback (ffi-make-closure cif #'callback)))
+  (test-call-callback pointer-to-callback))  ; => 23
+#+END_SRC
+
+#+RESULTS:
+: 23
+
+** Get c-string
+
+~(ffi-get-c-string POINTER)~. Assume the pointer points to a C string, and return a Lisp string with those contents.
+
+** Make a c-string
+
+- ~(ffi-make-c-string STRING)~. Allocate a C string with the same contents as the given Lisp string. Note that the memory allocated by this must be freed by the caller. It is done this way so that Lisp code has the option of transferring ownership of the pointer to some C code.
+
+** Define a struct
+
+- ~(define-ffi-struct NAME &rest SLOT...)~. A limited form of ~cl-defstruct~ that works on foreign objects. This defines a new foreign structure type named NAME. Each SLOT is of the form ~(SLOT-NAME :type TYPE)~. Each TYPE must be a foreign type.
+
+  ~define-ffi-struct~ makes accessors for each slot of the form ~NAME-SLOT-NAME~. ~setf~ works on these accessors.
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-struct test-struct
+  (stringval :type :pointer)
+  (intval :type :int))
+
+(define-ffi-function test-get-struct "test_get_struct"
+  test-struct nil test.so)
+
+(let ((struct-value (test-get-struct)))
+  (list
+   (ffi-get-c-string (test-struct-stringval struct-value))
+   (test-struct-intval struct-value))) ; => (string 23)
+#+END_SRC
+
+#+RESULTS:
+| string | 23 |
+
+
+** define a union
+
+(define-ffi-union NAME &rest SLOT...)~. Like ~define-ffi-struct~, but defines a union.
+
+#+BEGIN_SRC emacs-lisp
+(define-ffi-union test-union
+  (cval :type :uchar)
+  (ival :type :int))
+
+(define-ffi-function test-get-union "test_get_union"
+  test-union nil test.so)
+
+(let ((object (test-get-union)))
+    (list (test-union-ival object)
+	  (test-union-cval object))) ; => (-1 25)
+#+END_SRC
+
+#+RESULTS:
+| -1 | 255 |
+
+
+#+BEGIN_SRC emacs-lisp  
+
+#+END_SRC
+
+** Pointer functions
+
+- ~(ffi-pointer+ POINTER NUMBER)~.  Pointer math in Lisp.
+
+- ~(ffi-pointer-null-p POINTER)~. Return ~t~ if the argument is a null pointer. If the argument is not a pointer or is not null, return ~nil~.
+
+- ~(ffi-pointer= POINTER1 POINTER2)~. Return ~t~ if the two pointers are equal, ~nil~ if not.
+
+- ~(ffi-allocate TYPE-OR-NUMBER)~. Allocate some memory. If a type is given, allocates according to the type's size. If a number is given, allocates that many bytes. The returned memory will not be automatically reclaimed; you must use ~ffi-free~ for that.
+
+- ~(ffi-free POINTER)~. Free some memory allocated with ~ffi-allocate~ or ~ffi-make-c-string~.
+
+* Types
+
+Currently the library supports primitive and structure types for arguments and return types.
+
+Primitive types are described using keywords:
+
+- :void :: The void type.  This does not make sense as an argument type.
+
+- :int8, :uint8, :int16, :uint16, :int32, :uint32, :int64, :uint64 :: signed or unsigned integers of the indicated size.
+
+- :float, :double ::  float numbers at the specified precision (32 or 64 bit).
+
+- :char, :uchar, :schar, :ushort, :short, :uint, :int, :ulong, :long, ~ulonglong, :longlong ::  Signed or unsigned integers corresponding to the C type of the same name.  :char is treated specially because whether it is signed or unsigned is platform-dependent (and also command-line-argument-dependent, though normally this doesn't matter).
+
+- :pointer ::  A C pointer type.  Pointers currently aren't typed, in the sense that they aren't differentiated based on what they point to.
+
+- :size_t, :ssize_t, :ptrdiff_t, :wchar_t :: These correspond to the C type of the same name and internally are just aliases for one of the other integral types.
+
+- :bool ::  Booleans are treated in a Lisp style. As an argument type, ~nil~ is converted to a C ~false~ value, and other Lisp values are converted to ~true~. As a return type, ~true~ is converted to ~t~ and ~false~ is converted to ~nil~. Note that ~0~ is *not* converted to ~false~. If you want a "numeric" boolean type, you can use the size and alignment to find the corresponding primitive type and use that instead.
+
+Structure types are represented by a user-pointer object that wraps an ~ffi_type~. The best way to manipulate structures is to use ~define-ffi-struct~, which is a limited form of ~cl-defstruct~ that works on foreign objects directly.
+
+A structure object is also represented by a user-pointer object. If a function's return type is a structure type, then the object allocated by the FFI will automatically be reclaimed by the garbage collector -- there is no need to explicitly free it. (Contrast this with the behavior of ~ffi-make-c-string~, which requires an explicit free.)
+
+* Type Conversions
+
+Currently all type conversions work the same in both directions.
+
+- A function declared with a :void return type will always return nil to Lisp.
+
+- A function returning any integer or character type will return a Lisp integer. Note that this may result in the value being truncated; currently there is nothing that can be done about this.
+
+- A C pointer will be returned as a user-pointer (a new Lisp type introduced by the dynamic module patch).
+
+- A structure is also represented as a user-pointer. When a structure is returned by value from a foreign function, the resulting user-pointer will have a finalizer attached that will free the memory when the user-pointer is garbage collected.
+
+
+* Internal Functions
+
+- ~(ffi--dlopen STR)~. A simple wrapper for ~dlopen~ (actually ~lt_dlopen~). This returns the library handle, a C pointer.
+
+- ~(ffi--dlsym STR HANDLE)~. A simple wrapper for ~dlsym~ (actually ~lt_dlsym~). This finds the C symbol named STR in a library. HANDLE is a library handle, as returned by a function defined by ~define-ffi-library~.
+
+  This returns a C pointer to the indicated symbol, or ~nil~ if it can't be found. These pointers need not be freed.
+
+- ~(ffi--prep-cif RETURN-TYPE ARG-TYPES &optional N-FIXED-ARGS)~. A simple wrapper for libffi's ~ffi_prep_cif~ and ~ffi_prep_cif_var~. RETURN-TYPE is the return type; ARG-TYPES is a vector of argument types. If given, N-FIXED-ARGS is an integer holding the number of fixed args. Its presence, even if 0, means that a varargs call is being made. This function returns a C pointer wrapped in a Lisp object; the garbage collector will handle any needed finalization.
+
+- ~(ffi--call CIF FUNCTION &rest ARG...)~.  Make an FFI call.
+
+  CIF is the return from ~ffi--prep-cif~.
+
+  FUNCTION is a C pointer to the function to call, normally from ~ffi--dlsym~.
+
+  ARGS are the arguments to pass to FUNCTION.
+
+- ~(ffi--mem-ref POINTER TYPE)~. Read memory from POINTER and convert it, using the usual conversions, as the given type. This is the Lisp equivalent of ~*pointer~ in C.
+
+- ~(ffi--mem-set POINTER TYPE VALUE)~. Copy the Lisp value to the memory pointed at by the pointer, using the type to guide the conversion. This is the Lisp equivalent of ~*pointer = value~ in C.
+
+- ~(ffi--type-size TYPE)~.  Return the size of TYPE.
+
+- ~(ffi--type-alignment TYPE)~.  Return the alignment needed by TYPE.
+
+- ~(ffi--define-struct &rest TYPE...)~.  Define a new foreign structure
+ type, whose fields are the indicated types.
+
+- ~(ffi--define-union &rest TYPE...)~.  Define a new foreign union
+ type, whose fields are the indicated types.
+
+* Examples
+
+See [[./gsl-ffi.el]] for an Emacs-lisp script.
+
+See [[./gsl-ffi.org]] for a literate program in org-mode.
+
+* To-Do List
+
+See the github issues.

@@ -1,15 +1,12 @@
-* Using emacs-ffi with the Gnu Scientific Library
-
-I don't know why I have to use an absolute path to this library. It is probably specific to using a Mac, or not having some environment variable setup. 
+#+title: Using emacs-ffi with the Gnu Scientific Library
+#+author: John Kitchin
 
 First you define the library. We use the GNU Scientific library here (https://www.gnu.org/software/gsl/doc/html/index.html)
 
 #+BEGIN_SRC emacs-lisp
 (require 'ffi)
 
-(define-ffi-library gsl (if (eq system-type 'darwin)
-			    "/opt/homebrew/lib/libgsl.dylib"
-			  "libgsl"))
+(define-ffi-library gsl "libgsl")
 #+END_SRC
 
 #+RESULTS:
@@ -53,7 +50,7 @@ Returns: Function value (:double)
 
 ** Integration function
 
-This is a more complex example where we integrate a function. This block sets up some GSL integration functions.
+This is a more complex example where we integrate a function. This block sets up some GSL integration functions, and a struct.
 
 #+BEGIN_SRC emacs-lisp
 (define-ffi-function gsl-integration-workspace-alloc "gsl_integration_workspace_alloc"
@@ -101,6 +98,8 @@ workspace.")
 : gsl_function-params
 
 Here is a working example. We use it to integrate the function $f(x) = log x / sqrt(x)$ from 0 to 1. This is a hard one since it starts at log 0 which is undefined, and 1 / 0, which is also undefined. But, the integral converges to -4.
+
+There is a lot going on in here. We integrate a lisp function (that is turned into a pointer with ~ffi-make-closure~. The result is stored in a float we have to allocate, and then retrieve with ~ffi--mem-ref~.
 
 #+BEGIN_SRC emacs-lisp :results value
 (defun ff (x params) (/ (log x) (sqrt x)))
