@@ -28,7 +28,11 @@
 
 (require 'cl-macs)
 
-(module-load "ffi-module.so")
+;; this module is located in the directory where ffi.el is located.
+(module-load (expand-file-name
+              "ffi-module.so"
+              (file-name-directory load-file-name)))
+
 
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
