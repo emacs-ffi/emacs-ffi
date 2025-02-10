@@ -28,30 +28,96 @@
 
 (require 'cl-macs)
 
-(module-load "ffi-module.so")
+;; this module is located in the directory where ffi.el is located.
+(module-load (expand-file-name
+              "ffi-module.so"
+              (file-name-directory (or load-file-name
+                                       (buffer-file-name)))))
+
 
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
 (defmacro define-ffi-library (symbol name)
-  (let ((library (cl-gensym)))
+  "Create a pointer in SYMBOL that points to the c library of NAME.
+NAME is a string that can be an absolute path or library name."
+  (let ((library (cl-gensym))
+        (docstring (format "Returns a pointer to the %s library." name)))
     (set library nil)
     `(defun ,symbol ()
+       ,docstring
        (or ,library
            (setq ,library (ffi--dlopen ,name))))))
 
-(defmacro define-ffi-function (name c-name return-type arg-types library)
+(defmacro define-ffi-function (name c-name return args library &optional docstring)
+  "Create an Emacs function from a c-function.
+NAME is a symbol for  the emacs function to create.
+C-NAME is a string of the c-function to use.
+RETURN is a type-keyword or (type-keyword docstring)
+ARGS is a list of type-keyword or (type-keyword name &optional arg-docstring)
+LIBRARY is a symbol usually defined by `define-ffi-library'
+DOCSTRING is a string for the function to be created.
+
+An overall docstring is created for the function from the arg and return docstrings.
+"
   (declare (indent defun))
-  (let* (;; Turn variable references into actual types; while keeping
-         ;; keywords the same.
-         (arg-types (mapcar #'symbol-value arg-types))
-         (arg-names (mapcar (lambda (_ignore) (cl-gensym)) arg-types))
-         (arg-types (vconcat arg-types))
-         (function (cl-gensym))
-         (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
+  ;; (let* (;; Turn variable references into actual types; while keeping
+  ;;        ;; keywords the same.
+  ;;        (arg-types (mapcar #'symbol-value arg-types))
+  ;;        (arg-names (mapcar (lambda (_ignore) (cl-gensym)) arg-types))
+  ;;        (arg-types (vconcat arg-types))
+  ;;        (function (cl-gensym))
+  ;;        (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
+  ;;   (set function nil)
+  ;;   `(defun ,name (,@arg-names)
+  ;;      (unless ,function
+  ;;        (setq ,function (ffi--dlsym ,c-name (,library))))
+  ;;      ;; FIXME do we even need a separate prep?
+  ;;      (ffi--call ,cif ,function ,@arg-names)))
+  (let* ((return-type (if (listp return)
+                          (car return)
+                        ;; anything else we use as is
+			return))
+	 (return-docstring (format "Returns: %s (%s)"
+				   (if (listp return)
+				       (cl-second return)
+				     "")
+				   return-type))
+	 (arg-types (vconcat (mapcar (lambda (arg)
+				       (if (listp arg)
+                                           ;; assume list (type-keyword name &optional doc)
+                                           (symbol-value (car arg))
+					 (symbol-value arg)))
+				     args)))
+	 (arg-names (mapcar (lambda (arg)
+			      (if (listp arg)
+                                  ;; assume list (type-keyword name &optional doc)
+				  (cl-second arg)
+				(cl-gensym)))
+			    args))
+	 (arg-docstrings (mapcar (lambda (arg)
+				   (cond
+				    ((keywordp arg)
+				     "")
+				    ((and (listp arg) (= 3 (length arg)))
+				     (cl-third arg))
+				    (t "")))
+				 args))
+	 ;; Combine all the arg docstrings into one string
+	 (arg-docstring  (mapconcat 'identity
+		                    (cl-mapcar (lambda (name type arg-doc)
+			                         (format "%s (%s) %s"
+				                         (upcase (symbol-name name))
+				                         type
+				                         arg-doc))
+			                       arg-names arg-types arg-docstrings)
+		                    "\n"))
+	 (function (cl-gensym))
+	 (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
     (set function nil)
     `(defun ,name (,@arg-names)
+       ,(concat docstring "\n\n" arg-docstring "\n\n" return-docstring)
        (unless ,function
-         (setq ,function (ffi--dlsym ,c-name (,library))))
+	 (setq ,function (ffi--dlsym ,c-name (,library))))
        ;; FIXME do we even need a separate prep?
        (ffi--call ,cif ,function ,@arg-names))))
 
