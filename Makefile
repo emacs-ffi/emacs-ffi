@@ -51,7 +51,7 @@ clean:
 	-rm -f ffi-module.o ffi-module.so test.o test.so
 
 gsl:
-	$(PREFIX) emacs --batch -L . -l gsl-ffi.el
+	$(PREFIX) emacs --batch -L . -l examples/gsl-ffi.el
 
 gsl-org:
-	$(PREFIX) emacs --batch -L . --eval="(progn (find-file \"gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
+	$(PREFIX) emacs --batch -L . --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
