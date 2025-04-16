@@ -20,6 +20,7 @@ EMACS_BUILDDIR ?= $(shell dirname $(EMACS_BIN))
 
 LDFLAGS += -shared
 LIBS = -lffi -lltdl
+PREFIX ?= env LD_LIBRARY_PATH=$(CURDIR):$$LD_LIBRARY_PATH
 
 ifeq ($(origin CC),default)
 CC  = gcc
@@ -32,13 +33,13 @@ CFLAGS += $(shell pkg-config -cflags libffi)
 
 all: ffi-module.so
 
-ffi-module.so: ffi-module.o	
-	$(CC) $(LDFLAGS) -o ffi-module.so ffi-module.o $(LIBS)
+ffi-module.so: ffi-module.o
+	$(PREFIX) $(CC) $(LDFLAGS) -o ffi-module.so ffi-module.o $(LIBS)
 
 ffi-module.o: ffi-module.c
 
 check: ffi-module.so test.so
-	$(GDB) $(EMACS) -batch -L `pwd` -l ert -l test.el \
+	$(PREFIX) $(GDB) $(EMACS) -batch -L `pwd` -l ert -l test.el \
 	  -f ert-run-tests-batch-and-exit
 
 test.so: test.o
@@ -50,7 +51,7 @@ clean:
 	-rm -f ffi-module.o ffi-module.so test.o test.so
 
 gsl:
-	emacs --batch -L . -l gsl-ffi.el
+	$(PREFIX) emacs --batch -L . -l gsl-ffi.el
 
 gsl-org:
-	emacs --batch -L . --eval="(progn (find-file \"gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
+	$(PREFIX) emacs --batch -L . --eval="(progn (find-file \"gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
