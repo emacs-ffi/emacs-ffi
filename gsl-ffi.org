@@ -26,17 +26,17 @@ We use a Bessel function here.
 #+END_SRC
 
 #+RESULTS:
-: -0.17759677131433832
+: -0.17759677131433826
 
 The macro gives a reasonable docstring.
 
 #+BEGIN_SRC emacs-lisp
-(describe-function 'gsl-sf-bessel-J0)
+  (describe-function 'gsl-sf-bessel-J0)
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-gsl-sf-bessel-J0 is a interpreted-function.
+gsl-sf-bessel-J0 is a Lisp function.
 
 (gsl-sf-bessel-J0 X)
 
@@ -121,6 +121,6 @@ There is a lot going on in here. We integrate a lisp function (that is turned in
 #+END_SRC
 
 #+RESULTS:
-: -3.9999999999999827
+: -4.000000000000085
 
 Success!
