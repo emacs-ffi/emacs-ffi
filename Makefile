@@ -14,7 +14,7 @@
 # along with this.  If not, see <https://www.gnu.org/licenses/>.
 
 # Where your dynamic-module-enabled Emacs build lies.
-EMACS  = $(shell realpath `which emacs`)
+EMACS  = $(shell realpath `command -v emacs`)
 EMACS_BIN = $(shell dirname $(EMACS))
 EMACS_BUILDDIR ?= $(shell dirname $(EMACS_BIN))
 
