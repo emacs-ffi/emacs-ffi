@@ -20,6 +20,10 @@ EMACS_BUILDDIR ?= $(shell dirname $(EMACS_BIN))
 
 LDFLAGS += -shared
 LIBS = -lffi -lltdl
+
+ifeq ($(origin CC),default)
+CC  = gcc
+endif
 CFLAGS += -g3 -Og -shared -fPIC -I$(EMACS_BUILDDIR)/include/ -I$(EMACS_BUILDDIR)/lib/
 CFLAGS += $(shell pkg-config -cflags libffi)
 
