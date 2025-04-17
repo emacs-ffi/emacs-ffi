@@ -41,7 +41,7 @@
 
 ;; this module is located in the directory where ffi.el is located.
 (module-load (expand-file-name
-              "ffi-module.so"
+              (concat "ffi-module" module-file-suffix)
               (file-name-directory (or load-file-name
                                        (buffer-file-name)))))
 
