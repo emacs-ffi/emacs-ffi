@@ -51,13 +51,27 @@
 (defmacro define-ffi-library (symbol name)
   "Create a pointer in SYMBOL that points to the c library of NAME.
 NAME is a string that can be an absolute path or library name."
-  (let ((library (cl-gensym))
-        (docstring (format "Returns a pointer to the %s library." name)))
-    (set library nil)
-    `(defun ,symbol ()
-       ,docstring
-       (or ,library
-           (setq ,library (ffi--dlopen ,name))))))
+  (let* ((prefix (concat (symbol-name symbol) "--ffi-"))
+         (library (cl-gensym prefix))
+         (value-var (cl-gensym prefix))
+         (docstring (cl-gensym prefix)))
+    `(progn
+       ;; NOTE: the `defvar'+`setq' dance below allows for `define-ffi-library'
+       ;; call-sites to work in files where `lexical-binding' is nil as well.
+       (defvar ,library)
+       (defvar ,value-var)
+       (defvar ,docstring)
+       ;; NOTE: evaluating `name' at runtime allows us to pass expressions that
+       ;; determine absolute path based on `load-file-name' or
+       ;; `buffer-file-name'.
+       (setq ,value-var ,name
+             ,docstring (format "Returns a pointer to the %s library."
+                                ,value-var)
+             ,library nil)
+       (defun ,symbol ()
+         ,docstring
+         (or (and (boundp ',library) ,library)
+             (setq ,library (ffi--dlopen ,value-var)))))))
 
 (defmacro define-ffi-function (name c-name return args library &optional docstring)
   "Create an Emacs function from a c-function.

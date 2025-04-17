@@ -17,10 +17,6 @@
 EMACS  = $(shell realpath `command -v emacs`)
 EMACS_BIN = $(shell dirname $(EMACS))
 EMACS_BUILDDIR ?= $(shell dirname $(EMACS_BIN))
-EMACS_LIBRARY_PATH = $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR):$(CURDIR)/$(LIB_DIR)
-EMACS_LIBRARY_PATH = $(CURDIR)/$(LIB_DIR)
-EMACS_LIBRARY_PATH = $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR)
-EMACS_PREFIX ?= env LD_LIBRARY_PATH=$(EMACS_LIBRARY_PATH):$$LD_LIBRARY_PATH
 
 ifeq ($(origin CC),default)
 CC  := gcc
@@ -59,7 +55,7 @@ EL_TARGETS := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el,\
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS)
 
 check: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS_PREFIX) $(GDB) $(EMACS) -batch \
+	$(GDB) $(EMACS) -batch \
 	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
 	  -l $(BUILD_DIR)/$(TEST_DIR)/test.el \
 	  -f ert-run-tests-batch-and-exit
@@ -95,11 +91,11 @@ $(OBJ_DIR)/%.o: %.c
 # examples using gsl
 .PHONY: gsl gsl-org
 gsl: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS_PREFIX) $(EMACS) --batch \
+	$(EMACS) --batch \
 	  -L $(CURDIR)/$(LIB_DIR) \
 	  -l examples/gsl-ffi.el
 
 gsl-org: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS_PREFIX) $(EMACS) --batch \
+	$(EMACS) --batch \
 	  -L $(CURDIR)/$(LIB_DIR) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"

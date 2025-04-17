@@ -32,7 +32,11 @@
 (require 'ert)
 (require 'ffi)
 
-(define-ffi-library test.so "test")
+(define-ffi-library test.so
+                    (expand-file-name
+                     (concat "test" module-file-suffix)
+                     (file-name-directory (or load-file-name
+                                              (buffer-file-name)))))
 
 (define-ffi-function test-function "test_function" :int nil test.so)
 (define-ffi-function test-function-char "test_function" :char nil test.so)
