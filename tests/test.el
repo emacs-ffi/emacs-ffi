@@ -1,5 +1,15 @@
 ;;; test.el --- FFI tests for Emacs  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2015-2024 Tom Tromey
+;; Copyright (C) 2020-2024 Jonas Bernoulli
+;; Copyright (C) 2025      Suhail
+
+;; Author: Tom Tromey <tom@tromey.com>
+;; Maintainer: Suhail <suhail@bayesians.ca>
+;; URL: https://github.com/emacs-ffi/emacs-ffi
+
+;; This file is not part of GNU Emacs.
+
 ;; This is is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -12,6 +22,10 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with this.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; These are tests for Emacs' FFI based on dynamic module support.
 
 ;;; Code:
 

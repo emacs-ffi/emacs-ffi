@@ -1,9 +1,20 @@
 ;;; ffi.el --- FFI for Emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2017 Tom Tromey
+;; Copyright (C) 2015-2024 Tom Tromey
+;; Copyright (C) 2020-2024 Jonas Bernoulli
+;; Copyright (C) 2024-2025 John Kitchin
+;; Copyright (C) 2024-2025 Suhail
 
 ;; Author: Tom Tromey <tom@tromey.com>
+;; Maintainer: Suhail <suhail@bayesians.ca>
+;; Description: An FFI for Emacs based on dynamic module support
+;; Keywords: extensions, internal, lisp, tools, unix
+;; License: GNU General Public License >= 3
 ;; Package-Requires: ((emacs "25.1"))
+;; Package-Version: 0.1.0.50-git
+;; URL: https://github.com/emacs-ffi/emacs-ffi
+
+;; This file is not part of GNU Emacs.
 
 ;; This is is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
