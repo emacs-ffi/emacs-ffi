@@ -68,17 +68,18 @@ NAME is a string that can be an absolute path or library name."
              (setq ,library (ffi--dlopen ,value-var))))
        (put #',symbol 'function-documentation ,docstring))))
 
+(declare-function ffi--prep-cif "ffi-module.c")
 (defmacro define-ffi-function (name c-name return args library &optional docstring)
   "Create an Emacs function from a c-function.
-NAME is a symbol for  the emacs function to create.
+NAME is a symbol for  the Emacs function to create.
 C-NAME is a string of the c-function to use.
 RETURN is a type-keyword or (type-keyword docstring)
 ARGS is a list of type-keyword or (type-keyword name &optional arg-docstring)
 LIBRARY is a symbol usually defined by `define-ffi-library'
 DOCSTRING is a string for the function to be created.
 
-An overall docstring is created for the function from the arg and return docstrings.
-"
+An overall docstring is created for the function from the arg and return
+docstrings."
   (declare (indent defun))
   ;; (let* (;; Turn variable references into actual types; while keeping
   ;;        ;; keywords the same.
@@ -141,6 +142,7 @@ An overall docstring is created for the function from the arg and return docstri
        ;; FIXME do we even need a separate prep?
        (ffi--call ,cif ,function ,@arg-names))))
 
+(declare-function ffi--call "ffi-module.c")
 (defun ffi-lambda (function-pointer return-type arg-types)
   (let ((cif (ffi--prep-cif return-type (vconcat arg-types))))
     (lambda (&rest args)             ; lame
@@ -149,6 +151,8 @@ An overall docstring is created for the function from the arg and return docstri
 (defsubst ffi--align (offset align)
   (+ offset (mod (- align (mod offset align)) align)))
 
+(declare-function ffi--type-alignment "ffi-module.c")
+(declare-function ffi--type-size "ffi-module.c")
 (defun ffi--lay-out-struct (types)
   (let ((offset 0))
     (mapcar (lambda (this-type)
@@ -188,6 +192,7 @@ An overall docstring is created for the function from the arg and return docstri
      slots field-types field-offsets)
     (cons 'progn (nreverse result-forms))))
 
+(declare-function ffi--define-struct "ffi-module.c")
 (defmacro define-ffi-struct (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
 
@@ -198,6 +203,7 @@ SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
   (ffi--struct-union-helper name slots #'ffi--define-struct
                             #'ffi--lay-out-struct))
 
+(declare-function ffi--define-union "ffi-module.c")
 (defmacro define-ffi-union (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
 
@@ -217,6 +223,8 @@ SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
                 (make-list (eval length) (symbol-value type)))))
     `(defvar ,name ,type-description ,docstring)))
 
+(declare-function ffi--mem-ref "ffi-module.c")
+(declare-function ffi-pointer+ "ffi-module.c")
 (defsubst ffi-aref (array type index)
   (ffi--mem-ref (ffi-pointer+ array (* index (ffi--type-size type))) type))
 
