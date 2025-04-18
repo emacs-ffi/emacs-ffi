@@ -89,19 +89,6 @@ DOCSTRING is a string for the function to be created.
 An overall docstring is created for the function from the arg and return
 docstrings."
   (declare (indent defun))
-  ;; (let* (;; Turn variable references into actual types; while keeping
-  ;;        ;; keywords the same.
-  ;;        (arg-types (mapcar #'symbol-value arg-types))
-  ;;        (arg-names (mapcar (lambda (_ignore) (cl-gensym)) arg-types))
-  ;;        (arg-types (vconcat arg-types))
-  ;;        (function (cl-gensym))
-  ;;        (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
-  ;;   (set function nil)
-  ;;   `(defun ,name (,@arg-names)
-  ;;      (unless ,function
-  ;;        (setq ,function (ffi--dlsym ,c-name (,library))))
-  ;;      ;; FIXME do we even need a separate prep?
-  ;;      (ffi--call ,cif ,function ,@arg-names)))
   (let* ((return-type (if (listp return)
                           (car return)
                         ;; anything else we use as is
