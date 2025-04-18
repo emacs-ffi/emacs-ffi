@@ -56,22 +56,17 @@ NAME is a string that can be an absolute path or library name."
          (value-var (cl-gensym prefix))
          (docstring (cl-gensym prefix)))
     `(progn
-       ;; NOTE: the `defvar'+`setq' dance below allows for `define-ffi-library'
-       ;; call-sites to work in files where `lexical-binding' is nil as well.
-       (defvar ,library)
-       (defvar ,value-var)
-       (defvar ,docstring)
-       ;; NOTE: evaluating `name' at runtime allows us to pass expressions that
-       ;; determine absolute path based on `load-file-name' or
-       ;; `buffer-file-name'.
-       (setq ,value-var ,name
-             ,docstring (format "Returns a pointer to the %s library."
-                                ,value-var)
-             ,library nil)
+       ;; NOTE: the `defvar's below allow for `define-ffi-library' call-sites to
+       ;; work in files where `lexical-binding' is nil as well.
+       (defvar ,library nil)
+       (defvar ,value-var ,name)
+       (defvar ,docstring (format "Returns a pointer to the %s library."
+                                  ,value-var))
        (defun ,symbol ()
-         ,docstring
-         (or (and (boundp ',library) ,library)
-             (setq ,library (ffi--dlopen ,value-var)))))))
+         "Returns a pointer to some library."
+         (or ,library
+             (setq ,library (ffi--dlopen ,value-var))))
+       (put #',symbol 'function-documentation ,docstring))))
 
 (defmacro define-ffi-function (name c-name return args library &optional docstring)
   "Create an Emacs function from a c-function.
