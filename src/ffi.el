@@ -132,15 +132,18 @@ docstrings."
 				                         arg-doc))
 			                       arg-names arg-types arg-docstrings)
 		                    "\n"))
-	 (function (cl-gensym))
-	 (cif (ffi--prep-cif (symbol-value return-type) arg-types)))
-    (set function nil)
-    `(defun ,name (,@arg-names)
-       ,(concat docstring "\n\n" arg-docstring "\n\n" return-docstring)
-       (unless ,function
-	 (setq ,function (ffi--dlsym ,c-name (,library))))
-       ;; FIXME do we even need a separate prep?
-       (ffi--call ,cif ,function ,@arg-names))))
+         (prefix (concat (symbol-name name) "--ffi-"))
+	 (function (cl-gensym prefix))
+         (cif (cl-gensym prefix)))
+    `(progn
+       (defvar ,function nil)
+       (defvar ,cif (ffi--prep-cif ,return-type ,arg-types))
+       (defun ,name (,@arg-names)
+         ,(concat docstring "\n\n" arg-docstring "\n\n" return-docstring)
+         (unless ,function
+	   (setq ,function (ffi--dlsym ,c-name (,library))))
+         ;; FIXME do we even need a separate prep?
+         (ffi--call ,cif ,function ,@arg-names)))))
 
 (declare-function ffi--call "ffi-module.c")
 (defun ffi-lambda (function-pointer return-type arg-types)
@@ -173,9 +176,10 @@ docstrings."
                                 (cl-assert (eq (cadr slot) :type))
                                 (symbol-value (cl-caddr slot)))
                               slots))
-         (the-type (apply definer-function field-types))
          (field-offsets (funcall layout-function field-types)))
-    (push `(defvar ,name ,the-type ,docstring)
+    (push `(defvar ,name nil ,docstring)
+          result-forms)
+    (push `(setq ,name (apply #',definer-function ',field-types))
           result-forms)
     (cl-mapc
      (lambda (slot type offset)
@@ -195,10 +199,9 @@ docstrings."
 (declare-function ffi--define-struct "ffi-module.c")
 (defmacro define-ffi-struct (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
-
 NAME must be a symbol.
-Each SLOT must be of the form `(SLOT-NAME :type TYPE)', where
-SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
+SLOTS is a list with each SLOT of the form `(SLOT-NAME :type TYPE)',
+where SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
   (declare (indent defun))
   (ffi--struct-union-helper name slots #'ffi--define-struct
                             #'ffi--lay-out-struct))
@@ -206,10 +209,9 @@ SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
 (declare-function ffi--define-union "ffi-module.c")
 (defmacro define-ffi-union (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
-
 NAME must be a symbol.
-Each SLOT must be of the form `(SLOT-NAME :type TYPE)', where
-SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
+SLOTS is a list with each SLOT of the form `(SLOT-NAME :type TYPE)',
+where SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
   (declare (indent defun))
   (ffi--struct-union-helper name slots #'ffi--define-union
                             (lambda (types)
@@ -218,10 +220,8 @@ SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
 (defmacro define-ffi-array (name type length &optional docstring)
   ;; This is a hack until libffi gives us direct support.
   (declare (indent defun))
-  (let ((type-description
-         (apply #'ffi--define-struct
-                (make-list (eval length) (symbol-value type)))))
-    `(defvar ,name ,type-description ,docstring)))
+  (let ((field-types (make-list (eval length) (symbol-value type))))
+    `(defvar ,name (apply #'ffi--define-struct ',field-types) ,docstring)))
 
 (declare-function ffi--mem-ref "ffi-module.c")
 (declare-function ffi-pointer+ "ffi-module.c")
