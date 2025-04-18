@@ -1,3 +1,5 @@
+;;; gsl-ffi.el --- FFI example with GSL  -*- lexical-binding: t; -*-
+
 (require 'ffi)
 
 (define-ffi-library gsl "libgsl")

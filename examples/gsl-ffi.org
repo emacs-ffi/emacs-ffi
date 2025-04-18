@@ -1,3 +1,6 @@
+:PROPERTIES:
+:header-args:emacs-lisp+: :lexical t
+:END:
 #+title: Using emacs-ffi with the Gnu Scientific Library
 #+author: John Kitchin
 
@@ -37,7 +40,7 @@ The macro gives a reasonable docstring.
 
 #+RESULTS:
 #+begin_example
-gsl-sf-bessel-J0 is a Lisp function.
+gsl-sf-bessel-J0 is a Lisp closure.
 
 (gsl-sf-bessel-J0 X)
 

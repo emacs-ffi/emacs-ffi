@@ -43,21 +43,23 @@ EL_SRC_FILES := $(wildcard $(SRC_DIR)/*.el $(TEST_DIR)/*.el)
 OBJ_FILES := $(patsubst %,$(OBJ_DIR)/%.o,$(basename $(SRC_FILES)))
 # FIXME: support `module-file-suffix'
 SO_FILES := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.so,\
-              $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.so,\
-              $(basename $(SRC_FILES))))
+		$(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.so,\
+		$(basename $(SRC_FILES))))
 EL_TARGETS := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el,\
-              $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.el,\
-              $(basename $(EL_SRC_FILES))))
-
+		$(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.el,\
+		$(basename $(EL_SRC_FILES))))
+ELC_TARGETS := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.elc,\
+		$(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.elc,\
+		$(basename $(EL_SRC_FILES))))
 
 
 .PHONY: all check clean
-all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS)
+all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 
-check: $(SO_FILES) $(EL_TARGETS)
-	$(GDB) $(EMACS) -batch \
+check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
+	$(GDB) $(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
-	  -l $(BUILD_DIR)/$(TEST_DIR)/test.el \
+	  -l $(BUILD_DIR)/$(TEST_DIR)/test.elc \
 	  -f ert-run-tests-batch-and-exit
 
 clean:
@@ -72,6 +74,8 @@ $(LIB_DIR)/%.so: $(OBJ_DIR)/$(SRC_DIR)/%.o
 $(LIB_DIR)/%.el: $(SRC_DIR)/%.el
 	@mkdir -p $(@D)
 	cp $< $@
+$(LIB_DIR)/%.elc: $(LIB_DIR)/%.el
+	$(EMACS) -Q --batch -f batch-byte-compile $<
 
 # Linking rule for obj/tests/*.o -> tests/*.so
 $(BUILD_DIR)/$(TEST_DIR)/%.so: $(OBJ_DIR)/$(TEST_DIR)/%.o
@@ -81,6 +85,8 @@ $(BUILD_DIR)/$(TEST_DIR)/%.so: $(OBJ_DIR)/$(TEST_DIR)/%.o
 $(BUILD_DIR)/$(TEST_DIR)/%.el: $(TEST_DIR)/%.el
 	@mkdir -p $(@D)
 	cp $< $@
+$(BUILD_DIR)/$(TEST_DIR)/%.elc: $(BUILD_DIR)/$(TEST_DIR)/%.el
+	$(EMACS) -Q --batch -L $(LIB_DIR) -f batch-byte-compile $<
 
 # Compilation rule for .c -> .o
 $(OBJ_DIR)/%.o: %.c
@@ -91,11 +97,11 @@ $(OBJ_DIR)/%.o: %.c
 # examples using gsl
 .PHONY: gsl gsl-org
 gsl: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS) --batch \
+	$(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) \
 	  -l examples/gsl-ffi.el
 
 gsl-org: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS) --batch \
+	$(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"

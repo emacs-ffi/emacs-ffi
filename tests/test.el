@@ -136,8 +136,10 @@
 (defconst test-user-defined-char :char)
 
 (ert-deftest ffi-array ()
-  (should (eq (define-ffi-array arr1 :char 1024) 'arr1))
-  (should (eq (define-ffi-array arr2 test-user-defined-char 1024) 'arr2)))
+  (should (eq (define-ffi-array ffi-test-arr1 :char 1024)
+              'ffi-test-arr1))
+  (should (eq (define-ffi-array ffi-test-arr2 test-user-defined-char 1024)
+              'ffi-test-arr2)))
 
 (ert-deftest ffi-with-ffi-multi-stat ()
   (should (eq (with-ffi-temporary (a :int) 1 2 3) 3))
