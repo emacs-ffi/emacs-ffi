@@ -83,17 +83,17 @@ docstrings."
                           (car return)
                         ;; anything else we use as is
 			return))
-	 (return-docstring (format "Returns: %s (%s)"
-				   (if (listp return)
-				       (cl-second return)
-				     "")
-				   return-type))
          (arg-names (mapcar (lambda (arg)
 	        	      (if (listp arg)
                                   ;; assume list (type-keyword name &optional doc)
 	        		  (cl-second arg)
 	        		(cl-gensym)))
 	        	    args))
+         (return-docstring (format "Returns: %s (%s)"
+				   (if (listp return)
+				       (cl-second return)
+				     (format "%s%s" c-name arg-names))
+				   return-type))
          (prefix (concat (symbol-name name) "--ffi-"))
          (fn (cl-gensym prefix))
          (cif (cl-gensym prefix)))
