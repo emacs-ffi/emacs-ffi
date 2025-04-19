@@ -114,11 +114,9 @@ $(OBJ_DIR)/%.o: %.c
 # examples using gsl
 .PHONY: gsl gsl-org
 gsl: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) \
+	$(GDB) $(EMACS) -Q --batch -L $(CURDIR)/$(LIB_DIR) \
 	  -l examples/gsl-ffi.el
 
 gsl-org: $(SO_FILES) $(EL_TARGETS)
-	$(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) \
+	$(GDB) $(EMACS) -Q --batch -L $(CURDIR)/$(LIB_DIR) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
