@@ -51,7 +51,8 @@
 (defmacro define-ffi-library (symbol name)
   "Create a pointer in SYMBOL that points to the c library of NAME.
 NAME is a string that can be an absolute path or library name."
-  ;; FIXME: add appropriate debug specification here
+  (declare (debug (sexp form))
+           (indent defun))
   (let* ((prefix (concat (symbol-name symbol) "--ffi-"))
          (library (cl-gensym prefix))
          (filename (cl-gensym prefix)))
@@ -78,7 +79,8 @@ DOCSTRING is a string for the function to be created.
 
 An overall docstring is created for the function from the arg and return
 docstrings."
-  (declare (indent defun))
+  (declare (debug (sexp form form form sexp &optional form))
+           (indent defun))
   (let* ((return-type (if (listp return)
                           (car return)
                         ;; anything else we use as is
@@ -141,16 +143,32 @@ docstrings."
 
 (declare-function ffi--call "ffi-module.c")
 (defun ffi-lambda (function-pointer return-type arg-types)
+  "Create a callable Lisp function for a foreign function.
+FUNCTION-POINTER is the address of the C function (can be obtained via
+`ffi--dlsym').  RETURN-TYPE is the FFI type specifier for the return
+value.  ARG-TYPES is a list of FFI type specifiers for arguments.
+
+The returned lambda can be called with arguments matching ARG-TYPES, however,
+this isn't enforced."
   (let ((cif (ffi--prep-cif return-type (vconcat arg-types))))
     (lambda (&rest args)             ; lame
       (apply #'ffi--call cif function-pointer args))))
 
 (defsubst ffi--align (offset align)
+  "Return OFFSET aligned to ALIGNMENT boundary.
+Returns smallest value >= OFFSET that is a multiple of ALIGN.
+This is an inline helper for memory layout calculations."
   (+ offset (mod (- align (mod offset align)) align)))
 
 (declare-function ffi--type-alignment "ffi-module.c")
 (declare-function ffi--type-size "ffi-module.c")
 (defun ffi--lay-out-struct (types)
+  "Calculate field offsets for a struct with given TYPES.
+TYPES is a list of FFI type specifiers.
+Returns a list of byte offsets for each field, considering alignment.
+
+This handles struct padding according to each type's alignment requirements.
+Uses `ffi--align' to compute each field's starting position."
   (let ((offset 0))
     (mapcar (lambda (this-type)
               (setf offset (ffi--align offset
@@ -161,6 +179,19 @@ docstrings."
             types)))
 
 (defun ffi--struct-union-helper (name slots definer-function layout-function)
+  "Internal helper for defining struct/union types.
+NAME is the symbol for the new type.
+SLOTS is a list of (FIELD-NAME :type TYPE-SYMBOL [DOC]) entries.
+DEFINER-FUNCTION is either `ffi-defstruct' or `ffi-defunion'.
+LAYOUT-FUNCTION calculates field offsets (e.g. `ffi--lay-out-struct').
+
+Generates code as data that includes:
+1. A type definition variable NAME
+2. Inline accessor functions for each field
+3. Offset calculations using LAYOUT-FUNCTION
+
+The first element of SLOTS may be a docstring for the type.
+Accessors are named NAME-FIELD-NAME using `cl-defsubst' for inline expansion."
   (cl-assert (symbolp name))
   (let* ((docstring (if (stringp (car slots))
                         (pop slots)))
@@ -193,27 +224,38 @@ docstrings."
 (declare-function ffi--define-struct "ffi-module.c")
 (defmacro define-ffi-struct (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
-NAME must be a symbol.
-SLOTS is a list with each SLOT of the form `(SLOT-NAME :type TYPE)',
-where SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
-  (declare (indent defun))
+NAME must be a symbol.  SLOTS is a list with each SLOT of the
+form `(SLOT-NAME :type TYPE)', where SLOT-NAME is a symbol and TYPE is
+an FFI type descriptor.  The first element of SLOTS may be a docstring
+for the struct."
+  (declare (debug (sexp &rest form))
+           (indent defun))
   (ffi--struct-union-helper name slots #'ffi--define-struct
                             #'ffi--lay-out-struct))
 
 (declare-function ffi--define-union "ffi-module.c")
 (defmacro define-ffi-union (name &rest slots)
   "Like a limited form of `cl-defstruct', but works with foreign objects.
-NAME must be a symbol.
-SLOTS is a list with each SLOT of the form `(SLOT-NAME :type TYPE)',
-where SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
-  (declare (indent defun))
+NAME must be a symbol.  SLOTS is a list with each SLOT of the
+form `(SLOT-NAME :type TYPE)', where SLOT-NAME is a symbol and TYPE is
+an FFI type descriptor.  The first element of SLOTS may be a docstring
+for the union."
+  (declare (debug (sexp &rest form))
+           (indent defun))
   (ffi--struct-union-helper name slots #'ffi--define-union
                             (lambda (types)
                               (make-list (length types) 0))))
 
 (defmacro define-ffi-array (name type length &optional docstring)
-  ;; This is a hack until libffi gives us direct support.
-  (declare (indent defun))
+  "Like a limited form of `cl-defstruct', but works with foreign objects.
+NAME must be a symbol.
+TYPE is an FFI type descriptor.
+LENGTH is an integer denoting length of the array.
+DOCSTRING is a string to document the variable being created.
+
+This is a hack until libffi gives us direct support."
+  (declare (debug (sexp form form &optional form))
+           (indent defun))
   `(progn
      (defvar ,name)
      (funcall
@@ -225,40 +267,66 @@ where SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
 (declare-function ffi--mem-ref "ffi-module.c")
 (declare-function ffi-pointer+ "ffi-module.c")
 (defsubst ffi-aref (array type index)
+  "Return the element at INDEX in FFI ARRAY of TYPE.
+ARRAY is a pointer to a C array.  TYPE is an FFI type specifier.
+INDEX is the zero-based position of the element to access."
   (ffi--mem-ref (ffi-pointer+ array (* index (ffi--type-size type))) type))
 
 (defmacro with-ffi-temporary (binding &rest body)
-  (declare (indent defun))
+  "Allocate a temporary FFI object, execute BODY, then free it.
+BINDING is (VAR TYPE-OR-INT) where VAR is the symbol to bind.
+
+The memory is automatically freed with `unwind-protect'.
+Use this for scoped FFI resource management."
+  (declare (debug t)
+           (indent defun))
   `(let ((,(car binding) (ffi-allocate ,@(cdr binding))))
      (unwind-protect
          (progn ,@body)
        (ffi-free ,(car binding)))))
 
 (defmacro with-ffi-temporaries (bindings &rest body)
-  (declare (indent defun))
+  "Allocate multiple temporary FFI objects in sequence.
+BINDINGS is a list of (VAR TYPE-OR-INT) bindings.
+Objects are allocated left-to-right and freed right-to-left.
+Execute BODY with all variables bound."
+  (declare (debug t)
+           (indent defun))
   (let ((first-binding (car bindings))
         (rest-bindings (cdr bindings)))
     (if rest-bindings
         `(with-ffi-temporary ,first-binding
-           (with-ffi-temporaries ,rest-bindings
-             ,@body))
+                             (with-ffi-temporaries ,rest-bindings
+                                                   ,@body))
       `(with-ffi-temporary ,first-binding ,@body))))
 
 (defmacro with-ffi-string (binding &rest body)
-  (declare (indent defun))
+  "Create a temporary C string from a Lisp string.
+BINDING is (VAR LISP-STRING) where:
+  VAR is the symbol to bind to the C string
+  LISP-STRING is the string to convert
+
+The string is automatically freed after BODY executes."
+  (declare (debug t)
+           (indent defun))
   `(let ((,(car binding) (ffi-make-c-string ,@(cdr binding))))
      (unwind-protect
          (progn ,@body)
        (ffi-free ,(car binding)))))
 
 (defmacro with-ffi-strings (bindings &rest body)
-  (declare (indent defun))
+  "Create multiple temporary C strings from Lisp strings.
+BINDINGS is a list of (VAR LISP-STRING) bindings.
+Strings are created left-to-right and freed right-to-left.
+Execute BODY with all variables bound."
+  (declare (debug t)
+           (indent defun))
   (let ((first-binding (car bindings))
         (rest-bindings (cdr bindings)))
     (if rest-bindings
         `(with-ffi-string ,first-binding
-           (with-ffi-strings ,rest-bindings
-             ,@body))
+                          (with-ffi-strings ,rest-bindings
+                                            ,@body))
       `(with-ffi-string ,first-binding ,@body))))
 
 (provide 'ffi)
