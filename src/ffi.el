@@ -1,5 +1,5 @@
 ;;; ffi.el --- FFI for Emacs  -*- lexical-binding: t; -*-
-
+
 ;; Copyright (C) 2015-2024 Tom Tromey
 ;; Copyright (C) 2020-2024 Jonas Bernoulli
 ;; Copyright (C) 2024-2025 John Kitchin
@@ -30,22 +30,45 @@
 ;; along with this.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+
 ;; This is an FFI for Emacs.  It is based on libffi and relies on the
 ;; dynamic module support in order to be loaded into Emacs.  It is
 ;; relatively full-featured, but for the time being low-level.
 
 ;;; Code:
-
+;;;; load `ffi-module'
+
 (require 'cl-macs)
 
-;; this module is located in the directory where ffi.el is located.
-(module-load (expand-file-name
-              (concat "ffi-module" module-file-suffix)
-              (file-name-directory (or load-file-name
-                                       (buffer-file-name)))))
+(defun ffi-module-build-command ()
+  "The build command for the `ffi-module'.
+It can be overridden by the EMACS_FFI_MODULE_BUILD_COMMAND environment
+variable."
+  (or (getenv "EMACS_FFI_MODULE_BUILD_COMMAND") "make all"))
 
+(cl-eval-when (load eval)
+  (unless (require 'ffi-module nil t)
+    (if (not (or noninteractive
+                 (yes-or-no-p "Compiled `ffi-module' missing; build now? ")))
+        (user-error "Abort")
+      (let ((cmd (ffi-module-build-command))
+            (default-directory
+             (file-name-directory
+              (locate-dominating-file (or load-file-name (buffer-file-name))
+                                      "Makefile"))))
+        (message "Building `ffi-module' with %S" cmd)
+        (with-temp-buffer
+          (unless (zerop (call-process-shell-command cmd nil t t))
+            (error "Failed to compile module using: %S: %s"
+                   cmd (buffer-string))))
+        (message "Loading `ffi-module'...")
+        (push (expand-file-name
+               (file-name-concat default-directory "build" "lib"))
+              load-path)
+        (require 'ffi-module)))))
 
+;;;; API
+
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
 (defmacro define-ffi-library (symbol name)
@@ -329,6 +352,7 @@ Execute BODY with all variables bound."
                                             ,@body))
       `(with-ffi-string ,first-binding ,@body))))
 
+
 (provide 'ffi)
 
 ;;; ffi.el ends here

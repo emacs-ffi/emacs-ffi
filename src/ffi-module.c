@@ -1,5 +1,10 @@
 /* FFI module
 
+Copyright (C) 2015-2024 Tom Tromey
+Copyright (C) 2025      Suhail
+
+This file not part of GNU Emacs.
+
 This is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or (at
@@ -1062,6 +1067,11 @@ emacs_module_init (struct emacs_runtime *runtime)
       if (env->non_local_exit_check (env))
 	return -1;
     }
+
+  /* (provide 'ffi-module) */
+  emacs_value provide = env->intern (env, "provide");
+  emacs_value mod = env->intern (env, "ffi-module");
+  env->funcall (env, provide, 1, &mod);
 
   return 0;
 }
