@@ -61,26 +61,17 @@ ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 
 check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
-	@echo "Testing: Lexical + Interpreted"
+	$(call run-test,Lexical + Interpreted,LEXICAL,el)
+	$(call run-test,Dynamic + Interpreted,DYNAMIC,el)
+	$(call run-test,Lexical + Byte-compiled,LEXICAL,elc)
+	$(call run-test,Dynamic + Byte-compiled,DYNAMIC,elc)
+define run-test
+	@echo "Testing: $(1)"
 	$(GDB) $(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
-	  $(foreach name,$(patsubst %.elc,%.el, $(TEST_ELC_LEXICAL)), -l $(name)) \
+	  $(foreach name,$(patsubst %.elc,%.$(3),$(TEST_ELC_$(2))),-l $(name)) \
 	  -f ert-run-tests-batch-and-exit
-	@echo "Testing: Dynamic + Interpreted"
-	$(GDB) $(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
-	  $(foreach name,$(patsubst %.elc,%.el, $(TEST_ELC_DYNAMIC)), -l $(name)) \
-	  -f ert-run-tests-batch-and-exit
-	@echo "Testing: Lexical + Byte-compiled"
-	$(GDB) $(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
-	  $(foreach name,$(TEST_ELC_LEXICAL), -l $(name)) \
-	  -f ert-run-tests-batch-and-exit
-	@echo "Testing: Dynamic + Byte-compiled"
-	$(GDB) $(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
-	  $(foreach name,$(TEST_ELC_DYNAMIC), -l $(name)) \
-	  -f ert-run-tests-batch-and-exit
+endef
 TEST_ELC_TARGETS = $(filter $(BUILD_DIR)/$(TEST_DIR)/%, $(ELC_TARGETS))
 TEST_ELC_DYNAMIC = $(filter %-dynamic.elc, $(TEST_ELC_TARGETS))
 TEST_ELC_LEXICAL = $(filter %-lexical.elc, $(TEST_ELC_TARGETS))
