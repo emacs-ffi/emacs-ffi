@@ -4,18 +4,19 @@
 (concatenate-manifests
  (list (package->development-manifest (specification->package "emacs"))
        (specifications->manifest (list
-                                  ;; essentials
+                                  ;; env necessities
+                                  "coreutils-minimal"
+                                  "bash"
+                                  "openssl"
+                                  "git-minimal" ;; for emacs' vc hooks
+                                  ;; package essentials
                                   "emacs"
-                                  "gdb"
                                   "libltdl"
                                   "libffi"
                                   "gcc-toolchain"
                                   "gcc-toolchain:static"
+                                  ;; package examples
                                   "gsl"
-                                  "openssl"
-                                  ;; env nevessities
-                                  "coreutils-minimal"
-                                  "bash"
-                                  "git-minimal" ;; for emacs' vc hooks
-                                  ;; niceties
-                                  "emacs-macrostep"))))
+                                  ;; package debugging
+                                  "emacs-macrostep"
+                                  "gdb"))))
