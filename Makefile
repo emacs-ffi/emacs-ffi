@@ -61,10 +61,22 @@ ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 
 check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
+	@echo "Testing: Lexical + Interpreted"
+	$(GDB) $(EMACS) -Q --batch \
+	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
+	  $(foreach name,$(patsubst %.elc,%.el, $(TEST_ELC_LEXICAL)), -l $(name)) \
+	  -f ert-run-tests-batch-and-exit
+	@echo "Testing: Dynamic + Interpreted"
+	$(GDB) $(EMACS) -Q --batch \
+	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
+	  $(foreach name,$(patsubst %.elc,%.el, $(TEST_ELC_DYNAMIC)), -l $(name)) \
+	  -f ert-run-tests-batch-and-exit
+	@echo "Testing: Lexical + Byte-compiled"
 	$(GDB) $(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
 	  $(foreach name,$(TEST_ELC_LEXICAL), -l $(name)) \
 	  -f ert-run-tests-batch-and-exit
+	@echo "Testing: Dynamic + Byte-compiled"
 	$(GDB) $(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
 	  $(foreach name,$(TEST_ELC_DYNAMIC), -l $(name)) \
