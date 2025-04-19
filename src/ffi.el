@@ -48,33 +48,23 @@
 
 (gv-define-simple-setter ffi--mem-ref ffi--mem-set t)
 
-;; FIXME: is there a better alternative to lexically binding `cache'?
-(defun define-ffi-apply--with-cache (func &rest args)
-  "Call FUNC with lexically-bound CACHE and ARGS."
-  (let ((cache nil))
-    (apply func cache args)))
-(put #'define-ffi-apply--with-cache 'lisp-indent-function 'defun)
-
 (defmacro define-ffi-library (symbol name)
   "Create a pointer in SYMBOL that points to the c library of NAME.
 NAME is a string that can be an absolute path or library name."
   ;; FIXME: add appropriate debug specification here
-  `(progn
-     (unless ,(bound-and-true-p lexical-binding)
-       (user-error "Using `define-ffi-library' in dynamic binding is unsupported; switch to lexical binding"))
-     (declare-function ,symbol nil)
-     (define-ffi-apply--with-cache
-       (lambda (library filename)
-         "Returns a pointer to the library denoted by FILENAME.
-When invoked, LIBRARY must be a let-bound so that its value may be
-updated."
-         (defun ,symbol ()
-           (or library
-               (setq library (ffi--dlopen filename))))
-         (put #',symbol 'function-documentation
-              (format "Returns a pointer to the %s library." filename))
-         ',symbol)
-       ,name)))
+  (let* ((prefix (concat (symbol-name symbol) "--ffi-"))
+         (library (cl-gensym prefix))
+         (filename (cl-gensym prefix)))
+    `(let nil
+       (declare-function ,symbol nil)
+       (defvar ,library nil)
+       (defvar ,filename ,name)
+       (defun ,symbol ()
+         (or ,library
+             (setq ,library (ffi--dlopen ,filename))))
+       (put #',symbol 'function-documentation
+            (format "Returns a pointer to the %s library." ,filename))
+       ',symbol)))
 
 (declare-function ffi--prep-cif "ffi-module.c")
 (defmacro define-ffi-function (name c-name return args library &optional docstring)
@@ -103,53 +93,51 @@ docstrings."
                                   ;; assume list (type-keyword name &optional doc)
 	        		  (cl-second arg)
 	        		(cl-gensym)))
-	        	    args)))
-    `(progn
-       (unless ,(bound-and-true-p lexical-binding)
-         (user-error "Using `define-ffi-function' in dynamic binding is unsupported; switch to lexical binding"))
-       (let* ((arg-types
-               (vconcat (mapcar (lambda (arg)
-	        	          (if (listp arg)
-                                      ;; assume list (type-keyword name &optional doc)
-                                      (symbol-value (car arg))
-	        	            (symbol-value arg)))
-	        	        ',args)))
-              (arg-docstring
-               (mapconcat
-                'identity
-	        (cl-mapcar (lambda (name type arg-doc)
-	        	     (format "%s (%s) %s"
-	        		     (upcase (symbol-name name))
-	        		     type
-	        		     arg-doc))
-	        	   ',arg-names arg-types
-                           (mapcar (lambda (arg)
-	        		     (cond
-	        		      ((keywordp arg)
-	        		       "")
-	        		      ((and (listp arg) (= 3 (length arg)))
-	        		       (cl-third arg))
-	        		      (t "")))
-	        		   ',args))
-	        "\n"))
-              (cif (ffi--prep-cif ,return-type arg-types)))
-         (declare-function ,name nil)
-         (define-ffi-apply--with-cache
-           (lambda (fn arg-docstring cif)
-             (defun ,name (,@arg-names)
-               ,docstring
-               (unless fn
-	         (setq fn (ffi--dlsym ,c-name (,library))))
-               ;; FIXME do we even need a separate prep?
-               (ffi--call cif fn ,@arg-names))
-             (put #',name 'function-documentation
-                  (concat ,docstring
-                          (when ,docstring "\n\n")
-                          arg-docstring
-                          "\n\n"
-                          ,return-docstring))
-             ',name)
-           arg-docstring cif)))))
+	        	    args))
+         (prefix (concat (symbol-name name) "--ffi-"))
+         (fn (cl-gensym prefix))
+         (cif (cl-gensym prefix)))
+    `(let* ((arg-types
+             (vconcat (mapcar (lambda (arg)
+	        	        (if (listp arg)
+                                    ;; assume list (type-keyword name &optional doc)
+                                    (symbol-value (car arg))
+	        	          (symbol-value arg)))
+	        	      ',args)))
+            (arg-docstring
+             (mapconcat
+              'identity
+	      (cl-mapcar (lambda (name type arg-doc)
+	        	   (format "%s (%s) %s"
+	        		   (upcase (symbol-name name))
+	        		   type
+	        		   arg-doc))
+	        	 ',arg-names arg-types
+                         (mapcar (lambda (arg)
+	        		   (cond
+	        		    ((keywordp arg)
+	        		     "")
+	        		    ((and (listp arg) (= 3 (length arg)))
+	        		     (cl-third arg))
+	        		    (t "")))
+	        		 ',args))
+	      "\n")))
+       (declare-function ,name nil)
+       (defvar ,fn nil)
+       (defvar ,cif (ffi--prep-cif ,return-type arg-types))
+       (defun ,name (,@arg-names)
+         ,docstring
+         (unless ,fn
+	   (setq ,fn (ffi--dlsym ,c-name (,library))))
+         ;; FIXME do we even need a separate prep?
+         (ffi--call ,cif ,fn ,@arg-names))
+       (put #',name 'function-documentation
+            (concat ,docstring
+                    (when ,docstring "\n\n")
+                    arg-docstring
+                    "\n\n"
+                    ,return-docstring))
+       ',name)))
 
 (declare-function ffi--call "ffi-module.c")
 (defun ffi-lambda (function-pointer return-type arg-types)
@@ -228,11 +216,11 @@ where SLOT-NAME is a symbol and TYPE is an FFI type descriptor."
   (declare (indent defun))
   `(progn
      (defvar ,name)
-     (define-ffi-apply--with-cache
-       (lambda (_ field-types)
-         (defvar ,name (apply #'ffi--define-struct field-types)
-           ,docstring))
-       (make-list ,length ,type))))
+     (funcall
+      (lambda (field-types)
+        (defvar ,name (apply #'ffi--define-struct field-types)
+          ,docstring))
+      (make-list ,length ,type))))
 
 (declare-function ffi--mem-ref "ffi-module.c")
 (declare-function ffi-pointer+ "ffi-module.c")

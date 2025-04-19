@@ -45,12 +45,16 @@ OBJ_FILES := $(patsubst %,$(OBJ_DIR)/%.o,$(basename $(SRC_FILES)))
 SO_FILES := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.so,\
 		$(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.so,\
 		$(basename $(SRC_FILES))))
-EL_TARGETS := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el,\
-		$(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.el,\
-		$(basename $(EL_SRC_FILES))))
-ELC_TARGETS := $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.elc,\
-		$(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/$(TEST_DIR)/%.elc,\
-		$(basename $(EL_SRC_FILES))))
+# Elisp targets
+TEST_EL_SRC = $(filter $(TEST_DIR)/%, $(EL_SRC_FILES))
+SRC_EL_SRC = $(filter-out $(TEST_DIR)/%, $(EL_SRC_FILES))
+TEST_EL_TARGETS = $(foreach t, $(TEST_EL_SRC), \
+	$(BUILD_DIR)/$(TEST_DIR)/$(basename $(notdir $(t)))-lexical.el \
+	$(BUILD_DIR)/$(TEST_DIR)/$(basename $(notdir $(t)))-dynamic.el )
+SRC_EL_TARGETS = $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el, \
+	$(basename $(SRC_EL_SRC)))
+EL_TARGETS = $(TEST_EL_TARGETS) $(SRC_EL_TARGETS)
+ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
 
 
 .PHONY: all check clean
@@ -59,8 +63,15 @@ all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 	$(GDB) $(EMACS) -Q --batch \
 	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
-	  -l $(BUILD_DIR)/$(TEST_DIR)/test.elc \
+	  $(foreach name,$(TEST_ELC_LEXICAL), -l $(name)) \
 	  -f ert-run-tests-batch-and-exit
+	$(GDB) $(EMACS) -Q --batch \
+	  -L $(CURDIR)/$(LIB_DIR) -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
+	  $(foreach name,$(TEST_ELC_DYNAMIC), -l $(name)) \
+	  -f ert-run-tests-batch-and-exit
+TEST_ELC_TARGETS = $(filter $(BUILD_DIR)/$(TEST_DIR)/%, $(ELC_TARGETS))
+TEST_ELC_DYNAMIC = $(filter %-dynamic.elc, $(TEST_ELC_TARGETS))
+TEST_ELC_LEXICAL = $(filter %-lexical.elc, $(TEST_ELC_TARGETS))
 
 clean:
 	-rm -rf $(BUILD_DIR)
@@ -81,10 +92,13 @@ $(LIB_DIR)/%.elc: $(LIB_DIR)/%.el
 $(BUILD_DIR)/$(TEST_DIR)/%.so: $(OBJ_DIR)/$(TEST_DIR)/%.o
 	@mkdir -p $(@D)
 	$(CC) $(LDFLAGS) -o $@ $<
-# Copy rule for tests/ .el files
-$(BUILD_DIR)/$(TEST_DIR)/%.el: $(TEST_DIR)/%.el
+# Generate test-lexical.el and test-dynamic.el for each test.el
+$(BUILD_DIR)/$(TEST_DIR)/%-lexical.el: $(TEST_DIR)/%.el
 	@mkdir -p $(@D)
-	cp $< $@
+	sed '1s/lexical-binding:[[:space:]]*[^ ;]*/lexical-binding: t/' $< > $@
+$(BUILD_DIR)/$(TEST_DIR)/%-dynamic.el: $(TEST_DIR)/%.el
+	@mkdir -p $(@D)
+	sed '1s/lexical-binding:[[:space:]]*[^ ;]*/lexical-binding: nil/' $< > $@
 $(BUILD_DIR)/$(TEST_DIR)/%.elc: $(BUILD_DIR)/$(TEST_DIR)/%.el
 	$(EMACS) -Q --batch -L $(LIB_DIR) -f batch-byte-compile $<
 
