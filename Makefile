@@ -112,11 +112,15 @@ $(OBJ_DIR)/%.o: %.c
 
 
 # examples using gsl
+# NOTE: below we assume that either LIBRARY_PATH or LD_LIBRARY_PATH includes
+# libgsl.  Guix shell ensures that it's added to LIBRARY_PATH.
 .PHONY: gsl gsl-org
 gsl: $(SO_FILES) $(EL_TARGETS)
+	LD_LIBRARY_PATH=${LIBRARY_PATH}:${LD_LIBRARY_PATH} \
 	$(GDB) $(EMACS) -Q --batch -L $(CURDIR)/$(LIB_DIR) \
 	  -l examples/gsl-ffi.el
 
 gsl-org: $(SO_FILES) $(EL_TARGETS)
+	LD_LIBRARY_PATH=${LIBRARY_PATH}:${LD_LIBRARY_PATH} \
 	$(GDB) $(EMACS) -Q --batch -L $(CURDIR)/$(LIB_DIR) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
