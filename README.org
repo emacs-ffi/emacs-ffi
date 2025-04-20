@@ -411,6 +411,12 @@ Currently, all type conversions work the same in both directions.
 - See [[./examples/gsl-ffi.el]] for an Emacs-lisp script.
 - See [[./examples/gsl-ffi.org]] for a literate program in org-mode.
 
-* To-Do List
+* Outstanding issues, limitations, and caveats
 
-See [[https://github.com/emacs-ffi/emacs-ffi/issues][the GitHub issues]].
+Barring some bugs that are discovered and resolved, =ffi-module.c= is likely
+fairly stable and has a low probability of changing.  However, its wrapper,
+=ffi.el=, is more susceptible to change and some details may change to improve
+ease-of-use in addition to resolving bugs.
+
+Finally, the project allows for users to submit bug reports and feature requests
+that are [[https://github.com/emacs-ffi/emacs-ffi/issues][publicly visible here]].
