@@ -1,8 +1,8 @@
 ;;; test.el --- FFI tests for Emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2024 Tom Tromey
-;; Copyright (C) 2020-2024 Jonas Bernoulli
 ;; Copyright (C) 2025      Suhail
+;; Copyright (C) 2020-2024 Jonas Bernoulli
+;; Copyright (C) 2015-2024 Tom Tromey
 
 ;; Author: Tom Tromey <tom@tromey.com>
 ;; Maintainer: Suhail <suhail@bayesians.ca>

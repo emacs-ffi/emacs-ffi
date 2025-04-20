@@ -1,7 +1,7 @@
 /* FFI module
 
-Copyright (C) 2015-2024 Tom Tromey
 Copyright (C) 2025      Suhail
+Copyright (C) 2015-2024 Tom Tromey
 
 This file not part of GNU Emacs.
 

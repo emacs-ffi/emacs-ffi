@@ -1,16 +1,16 @@
-;;; ffi.el --- FFI for Emacs  -*- lexical-binding: t; -*-
+;;; ffi.el --- FFI based on libffi  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2024 Tom Tromey
-;; Copyright (C) 2020-2024 Jonas Bernoulli
-;; Copyright (C) 2024-2025 John Kitchin
 ;; Copyright (C) 2024-2025 Suhail
+;; Copyright (C) 2024-2025 John Kitchin
+;; Copyright (C) 2020-2024 Jonas Bernoulli
+;; Copyright (C) 2015-2024 Tom Tromey
 
 ;; Author: Tom Tromey <tom@tromey.com>
 ;; Maintainer: Suhail <suhail@bayesians.ca>
 ;; Description: An FFI for Emacs based on dynamic module support
 ;; Keywords: extensions, internal, lisp, tools, unix
 ;; License: GNU General Public License >= 3
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "25.1") (compat "28.1"))
 ;; Package-Version: 0.1.0.50-git
 ;; URL: https://github.com/emacs-ffi/emacs-ffi
 
@@ -38,7 +38,8 @@
 ;;; Code:
 ;;;; load `ffi-module'
 
-(require 'cl-macs)
+(eval-when-compile
+  (require 'cl-lib))
 
 (defun ffi-module-build-command ()
   "The build command for the `ffi-module'.

@@ -1,7 +1,7 @@
 ;;; gsl-ffi.el --- FFI example with GSL  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024      John Kitchin
 ;; Copyright (C) 2025      Suhail
+;; Copyright (C) 2024      John Kitchin
 
 ;;; Commentary:
 

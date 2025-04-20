@@ -10,13 +10,15 @@
                                   "openssl"
                                   "git-minimal" ;; for emacs' vc hooks
                                   ;; package essentials
-                                  "emacs"
+                                  "emacs" "emacs-compat"
                                   "libltdl"
                                   "libffi"
                                   "gcc-toolchain"
                                   "gcc-toolchain:static"
                                   ;; package examples
                                   "gsl"
-                                  ;; package debugging
+                                  ;; development
+                                  "emacs-eldev"
+                                  "emacs-package-lint" "emacs-relint"
                                   "emacs-macrostep"
                                   "gdb"))))

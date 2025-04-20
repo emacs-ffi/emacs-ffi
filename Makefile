@@ -110,6 +110,11 @@ $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+# Lint
+.PHONY: lint
+lint:
+	eldev doctor
+	eldev lint
 
 # examples using gsl
 # NOTE: below we assume that either LIBRARY_PATH or LD_LIBRARY_PATH includes
