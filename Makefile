@@ -59,17 +59,6 @@ ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
 # Documentation targets
 DOC_TARGETS = $(DOC_DIR)/ffi.texi $(DOC_DIR)/ffi.info
 
-$(DOC_DIR)/ffi.info: $(DOC_DIR)/ffi.texi
-$(DOC_DIR)/ffi.texi: README.org
-	@mkdir -p $(@D)
-	cp README.org $(DOC_DIR)/ffi.org
-	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
-.PHONY: docs-html
-docs-html: | $(DOC_DIR)/html
-$(DOC_DIR)/html: $(DOC_DIR)/ffi.texi
-	rm -rf $(DOC_DIR)/html
-	makeinfo --html -o $(DOC_DIR)/html $<
-
 .PHONY: all check clean
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)
 
@@ -92,6 +81,16 @@ TEST_ELC_LEXICAL = $(filter %-lexical.elc, $(TEST_ELC_TARGETS))
 clean:
 	-rm -rf $(BUILD_DIR)
 
+$(DOC_DIR)/ffi.info: $(DOC_DIR)/ffi.texi
+$(DOC_DIR)/ffi.texi: README.org
+	@mkdir -p $(@D)
+	cp README.org $(DOC_DIR)/ffi.org
+	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
+.PHONY: docs-html
+docs-html: | $(DOC_DIR)/html
+$(DOC_DIR)/html: $(DOC_DIR)/ffi.texi
+	rm -rf $(DOC_DIR)/html
+	makeinfo --html -o $(DOC_DIR)/html $<
 
 # Linking rule for obj/src/*.o -> lib/*.so
 $(LIB_DIR)/%.so: $(OBJ_DIR)/$(SRC_DIR)/%.o
