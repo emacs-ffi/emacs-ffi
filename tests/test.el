@@ -1,8 +1,8 @@
 ;;; test.el --- FFI tests for Emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2024 Tom Tromey
-;; Copyright (C) 2020-2024 Jonas Bernoulli
 ;; Copyright (C) 2025      Suhail
+;; Copyright (C) 2020-2024 Jonas Bernoulli
+;; Copyright (C) 2015-2024 Tom Tromey
 
 ;; Author: Tom Tromey <tom@tromey.com>
 ;; Maintainer: Suhail <suhail@bayesians.ca>
@@ -33,10 +33,10 @@
 (require 'ffi)
 
 (define-ffi-library test.so
-                    (expand-file-name
-                     (concat "test" module-file-suffix)
-                     (file-name-directory (or load-file-name
-                                              (buffer-file-name)))))
+  (expand-file-name
+   (concat "test" module-file-suffix)
+   (file-name-directory (or load-file-name
+                            (buffer-file-name)))))
 
 (define-ffi-function test-function "test_function" :int nil test.so)
 (define-ffi-function test-function-char "test_function" :char nil test.so)

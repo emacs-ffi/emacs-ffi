@@ -34,6 +34,7 @@ LIBS = -lffi -lltdl
 SRC_DIR := src
 TEST_DIR = tests
 BUILD_DIR := build
+DOC_DIR = $(BUILD_DIR)/doc
 OBJ_DIR := $(BUILD_DIR)/obj
 LIB_DIR = $(BUILD_DIR)/lib
 # Sources
@@ -55,10 +56,22 @@ SRC_EL_TARGETS = $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el, \
 	$(basename $(SRC_EL_SRC)))
 EL_TARGETS = $(TEST_EL_TARGETS) $(SRC_EL_TARGETS)
 ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
+# Documentation targets
+DOC_TARGETS = $(DOC_DIR)/ffi.texi $(DOC_DIR)/ffi.info
 
+$(DOC_DIR)/ffi.info: $(DOC_DIR)/ffi.texi
+$(DOC_DIR)/ffi.texi: README.org
+	@mkdir -p $(@D)
+	cp README.org $(DOC_DIR)/ffi.org
+	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
+.PHONY: docs-html
+docs-html: | $(DOC_DIR)/html
+$(DOC_DIR)/html: $(DOC_DIR)/ffi.texi
+	rm -rf $(DOC_DIR)/html
+	makeinfo --html -o $(DOC_DIR)/html $<
 
 .PHONY: all check clean
-all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
+all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)
 
 check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 	$(call run-test,Lexical + Interpreted,LEXICAL,el)
@@ -110,6 +123,11 @@ $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+# Lint
+.PHONY: lint
+lint:
+	eldev doctor
+	eldev lint
 
 # examples using gsl
 # NOTE: below we assume that either LIBRARY_PATH or LD_LIBRARY_PATH includes
@@ -124,3 +142,9 @@ gsl-org: $(SO_FILES) $(EL_TARGETS)
 	LD_LIBRARY_PATH=${LIBRARY_PATH}:${LD_LIBRARY_PATH} \
 	$(GDB) $(EMACS) -Q --batch -L $(CURDIR)/$(LIB_DIR) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
+
+# diagnostics
+.PHONY: emacs-info
+emacs-info:
+	@$(EMACS) --version
+	@$(EMACS) -Q --batch --eval='(message "%s" (with-temp-buffer (emacs-build-description) (buffer-string)))'
