@@ -38,8 +38,7 @@
 ;;; Code:
 ;;;; load `ffi-module'
 
-(eval-when-compile
-  (require 'cl-lib))
+(require 'cl-lib)
 
 (defun ffi-module-build-command ()
   "The build command for the `ffi-module'.
