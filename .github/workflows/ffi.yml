@@ -5,33 +5,29 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest    
-    strategy:
-      fail-fast: false
-
+    runs-on: ubuntu-latest
     steps:
-      
+
     - uses: actions/checkout@v4
 
     - name: Install packages
-      run: sudo apt-get update && sudo apt-get install -y emacs libltdl7 libltdl-dev libffi-dev libgsl-dev
-      
+      run: sudo apt-get update && sudo apt-get install -y emacs libltdl7 libltdl-dev libffi-dev libgsl-dev texinfo
+
     - name: About Emacs
       run: |
         emacs --version
         emacs -batch --eval '(message "hello")'
 
     - name: Run ffi tests
-      run: |       
-        make
-        ls
-        make check || true
+      run: |
+        make all
+        make check
 
     - name: Run gsl-ffi.el
       run: |
-        make gsl 
+        make gsl
 
     - name: Run gsl-ffi.org
       run: |
-        make gsl-org || true
+        make gsl-org
 
