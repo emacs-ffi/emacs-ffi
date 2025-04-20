@@ -11,8 +11,8 @@ This manual is for version 0.1.0.50-git.
 - =master= branch status: [[https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml][file:https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml/badge.svg?branch=master]]
 - =dev= branch status: [[https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml][file:https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml/badge.svg?branch=dev]]
 
-This file is adapted from
-https://raw.githubusercontent.com/tromey/emacs-ffi/5b92cdf4549c5a2d92395f483b0ef65bb85a8583/README.md.
+An HTML version of this manual is browsable [[https://emacs-ffi.github.io/emacs-ffi/][here]].  This file has been adapted
+from [[https://raw.githubusercontent.com/tromey/emacs-ffi/5b92cdf4549c5a2d92395f483b0ef65bb85a8583/README.md][the README in the unmaintained upstream]].
 
 * Setting up the environment
 

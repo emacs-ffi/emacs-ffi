@@ -13,6 +13,7 @@
 ;; Package-Requires: ((emacs "25.1") (compat "28.1"))
 ;; Package-Version: 0.1.0.50-git
 ;; URL: https://github.com/emacs-ffi/emacs-ffi
+;; Homepage: https://emacs-ffi.github.io/emacs-ffi
 
 ;; This file is not part of GNU Emacs.
 
