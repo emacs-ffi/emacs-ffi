@@ -18,6 +18,16 @@ to do something like this.
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/your/libraries
 #+END_SRC
 
+If you have the Guix package manager, [[file:manifest.scm][the included manifest file]] is sufficient
+for testing out the library in an isolated environment.  Evaluate something like
+the below in an interactive shell, in order to activate the environment.  Once
+that's done, the subsequent code snippets can be evaluated in an Emacs from the
+Guix shell environment.
+
+#+begin_src bash
+  guix shell --pure -CPWN -E '.*GTK.*|.*XDG.*|.*DISPLAY.*|TERM|INSIDE_EMACS' -m manifest.scm
+#+end_src
+
 * Using ffi.el
 
 Make sure that ~ffi.el~ is on your load path. Then just require it.
