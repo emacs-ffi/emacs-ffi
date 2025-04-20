@@ -14,9 +14,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y emacs libltdl7 libltdl-dev libffi-dev libgsl-dev texinfo
 
     - name: About Emacs
-      run: |
-        emacs --version
-        emacs -batch --eval '(message "hello")'
+      run: make emacs-info
 
     - name: Run ffi tests
       run: |

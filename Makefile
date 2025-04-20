@@ -138,3 +138,9 @@ gsl-org: $(SO_FILES) $(EL_TARGETS)
 	LD_LIBRARY_PATH=${LIBRARY_PATH}:${LD_LIBRARY_PATH} \
 	$(GDB) $(EMACS) -Q --batch -L $(CURDIR)/$(LIB_DIR) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
+
+# diagnostics
+.PHONY: emacs-info
+emacs-info:
+	@$(EMACS) --version
+	@$(EMACS) -Q --batch --eval='(message "%s" (with-temp-buffer (emacs-build-description) (buffer-string)))'
