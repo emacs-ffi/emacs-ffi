@@ -1,15 +1,15 @@
 #+title: FFI for Emacs
 
-This dynamic module provides an FFI for Emacs.  It is based on libffi and relies
-on the dynamic module support in order to be loaded into Emacs. It is relatively
-full-featured, but for the time is low-level.
+This dynamic module provides an FFI for Emacs.  It is based on =libffi= and
+relies on the dynamic module support in order to be loaded into Emacs. It is
+relatively full-featured, but for the time is low-level.
 
 This file is adapted from
 https://raw.githubusercontent.com/tromey/emacs-ffi/5b92cdf4549c5a2d92395f483b0ef65bb85a8583/README.md.
 
 * Setting up the environment
 
-The libltdl library is used to find libraries. You may need to set some
+The =libltdl= library is used to find libraries. You may need to set some
 environment variables to find your libraries. For the bash shell, you might need
 to do something like this.
 
@@ -23,7 +23,8 @@ to do something like this.
 Make sure that ~ffi.el~ is on your load path. Then just require it.
 
 #+BEGIN_SRC emacs-lisp
-  (add-to-list 'load-path ".")
+  (add-to-list 'load-path
+	       (expand-file-name (file-name-concat default-directory "src")))
   (require 'ffi)
 #+END_SRC
 
@@ -39,17 +40,18 @@ a library.
 
 #+BEGIN_SRC emacs-lisp
   (define-ffi-library
-   test.so
-   "/Users/jkitchin/Dropbox/emacs/projects/projects/emacs-ffi-modules/emacs-ffi-kitchinhub/test.so")
+    test.so
+    (expand-file-name
+     (file-name-concat default-directory "build" "tests" "test.so")))
 #+END_SRC
 
 #+RESULTS:
 : test.so
 
-ffi-module uses libltdl (from libtool), which will automatically supply the
-correct extension if none is specified, so it's generally best to leave off the
-~.so~. The library name is usually sufficient, but on a Mac, I find I have to
-use the full path sometimes.
+=ffi-module= uses =libltdl= (from =libtool=), which will automatically supply
+the correct extension if none is specified, so it's generally best to leave off
+the ~.so~. The library name is usually sufficient, but on a Mac, I find I have
+to use the full path sometimes.
 
 ** Defining ffi functions
 
@@ -93,7 +95,7 @@ Using ~define-ffi-function~, we can define Elisp-accessible functions as such:
 #+END_SRC
 
 #+RESULTS:
-: #<user-ptr ptr=0x16d34ff98 finalizer=0x369f13094>
+: #<user-ptr ptr=0x7f4369b4f000 finalizer=0x7f4369b541e9>
 
 
 
@@ -113,19 +115,15 @@ However, the docstring for ~test-add~ is not that great.
 #+END_SRC
 
 #+RESULTS:
-#+begin_example
-test-add is a interpreted-function.
-
-(test-add G121 G122)
-
-
-
-G121 (:int) 
-G122 (:int) 
-
-Returns:  (:int)
-
-#+end_example
+: test-add is a Lisp function.
+: 
+: (test-add G32 G33)
+: 
+: G32 (:int) 
+: G33 (:int) 
+: 
+: Returns: test_add(G32 G33) (:int)
+: 
 
 
 There is, however, a more sophisticated way to define a function that leads to
@@ -154,7 +152,7 @@ functions in elisp.
 
 #+RESULTS:
 #+begin_example
-test-add is a interpreted-function.
+test-add is a Lisp function.
 
 (test-add A B)
 
@@ -326,7 +324,7 @@ which requires an explicit free.)
 
 * Type Conversions
 
-Currently all type conversions work the same in both directions.
+Currently, all type conversions work the same in both directions.
 
 - A function declared with a ~:void~ return type will always return ~nil~ to
   Lisp.
@@ -356,11 +354,12 @@ Currently all type conversions work the same in both directions.
   found. These pointers need not be freed.
 
 - ~(ffi--prep-cif RETURN-TYPE ARG-TYPES &optional N-FIXED-ARGS)~. A simple
-  wrapper for libffi's ~ffi_prep_cif~ and ~ffi_prep_cif_var~. RETURN-TYPE is the
-  return type; ARG-TYPES is a vector of argument types. If given, N-FIXED-ARGS
-  is an integer holding the number of fixed args. Its presence, even if 0, means
-  that a varargs call is being made. This function returns a C pointer wrapped
-  in a Lisp object; the garbage collector will handle any needed finalization.
+  wrapper for =libffi='s ~ffi_prep_cif~ and ~ffi_prep_cif_var~. RETURN-TYPE is
+  the return type; ARG-TYPES is a vector of argument types. If given,
+  N-FIXED-ARGS is an integer holding the number of fixed args. Its presence,
+  even if 0, means that a varargs call is being made. This function returns a C
+  pointer wrapped in a Lisp object; the garbage collector will handle any needed
+  finalization.
 
 - ~(ffi--call CIF FUNCTION &rest ARG...)~.  Make an FFI call.
 
@@ -396,4 +395,4 @@ See [[./examples/gsl-ffi.org]] for a literate program in org-mode.
 
 * To-Do List
 
-See the github issues.
+See the GitHub issues.
