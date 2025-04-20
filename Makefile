@@ -64,7 +64,11 @@ $(DOC_DIR)/ffi.texi: README.org
 	@mkdir -p $(@D)
 	cp README.org $(DOC_DIR)/ffi.org
 	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
-
+.PHONY: docs-html
+docs-html: | $(DOC_DIR)/html
+$(DOC_DIR)/html: $(DOC_DIR)/ffi.texi
+	rm -rf $(DOC_DIR)/html
+	makeinfo --html -o $(DOC_DIR)/html $<
 
 .PHONY: all check clean
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)

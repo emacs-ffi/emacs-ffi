@@ -5,6 +5,8 @@ This dynamic module provides an FFI for Emacs.  It is based on =libffi= and
 relies on the dynamic module support in order to be loaded into Emacs. It is
 relatively full-featured, but for the time is low-level.
 
+This manual is for version 0.1.0.50-git.
+
 *                                                                  :noexport:
 - =master= branch status: [[https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml][file:https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml/badge.svg?branch=master]]
 - =dev= branch status: [[https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml][file:https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml/badge.svg?branch=dev]]
