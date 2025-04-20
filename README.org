@@ -1,4 +1,5 @@
 #+title: FFI for Emacs
+#+subtitle: for version 0.1.0.50-git
 
 This dynamic module provides an FFI for Emacs.  It is based on =libffi= and
 relies on the dynamic module support in order to be loaded into Emacs. It is
@@ -25,7 +26,9 @@ that's done, the subsequent code snippets can be evaluated in an Emacs from the
 Guix shell environment.
 
 #+begin_src bash
-  guix shell --pure -CPWN -E '.*GTK.*|.*XDG.*|.*DISPLAY.*|TERM|INSIDE_EMACS' -m manifest.scm
+  guix shell --pure -CPWN \
+       -E '.*GTK.*|.*XDG.*|.*DISPLAY.*|TERM|INSIDE_EMACS' \
+       -m manifest.scm
 #+end_src
 
 * Using ffi.el
@@ -399,10 +402,9 @@ Currently, all type conversions work the same in both directions.
 
 * Examples
 
-See [[./examples/gsl-ffi.el]] for an Emacs-lisp script.
-
-See [[./examples/gsl-ffi.org]] for a literate program in org-mode.
+- See [[./examples/gsl-ffi.el]] for an Emacs-lisp script.
+- See [[./examples/gsl-ffi.org]] for a literate program in org-mode.
 
 * To-Do List
 
-See the GitHub issues.
+See [[https://github.com/emacs-ffi/emacs-ffi/issues][the GitHub issues]].

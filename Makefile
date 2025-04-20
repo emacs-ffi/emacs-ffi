@@ -34,6 +34,7 @@ LIBS = -lffi -lltdl
 SRC_DIR := src
 TEST_DIR = tests
 BUILD_DIR := build
+DOC_DIR = $(BUILD_DIR)/doc
 OBJ_DIR := $(BUILD_DIR)/obj
 LIB_DIR = $(BUILD_DIR)/lib
 # Sources
@@ -55,10 +56,18 @@ SRC_EL_TARGETS = $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el, \
 	$(basename $(SRC_EL_SRC)))
 EL_TARGETS = $(TEST_EL_TARGETS) $(SRC_EL_TARGETS)
 ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
+# Documentation targets
+DOC_TARGETS = $(DOC_DIR)/ffi.texi $(DOC_DIR)/ffi.info
+
+$(DOC_DIR)/ffi.info: $(DOC_DIR)/ffi.texi
+$(DOC_DIR)/ffi.texi: README.org
+	@mkdir -p $(@D)
+	cp README.org $(DOC_DIR)/ffi.org
+	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
 
 
 .PHONY: all check clean
-all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
+all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)
 
 check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 	$(call run-test,Lexical + Interpreted,LEXICAL,el)

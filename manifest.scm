@@ -15,6 +15,7 @@
                                   "libffi"
                                   "gcc-toolchain"
                                   "gcc-toolchain:static"
+                                  "texinfo"
                                   ;; package examples
                                   "gsl"
                                   ;; development
