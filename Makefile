@@ -57,7 +57,7 @@ SRC_EL_TARGETS = $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el, \
 EL_TARGETS = $(TEST_EL_TARGETS) $(SRC_EL_TARGETS)
 ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
 # Documentation targets
-DOC_TARGETS = $(DOC_DIR)/ffi.texi $(DOC_DIR)/ffi.info
+DOC_TARGETS = $(DOC_DIR)/emacs-ffi.texi $(DOC_DIR)/emacs-ffi.info
 
 .PHONY: all check clean
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)
@@ -81,14 +81,15 @@ TEST_ELC_LEXICAL = $(filter %-lexical.elc, $(TEST_ELC_TARGETS))
 clean:
 	-rm -rf $(BUILD_DIR)
 
-$(DOC_DIR)/ffi.info: $(DOC_DIR)/ffi.texi
-$(DOC_DIR)/ffi.texi: README.org
+$(DOC_DIR)/emacs-ffi.info: $(DOC_DIR)/emacs-ffi.texi
+$(DOC_DIR)/emacs-ffi.texi: doc/emacs-ffi.org
+	@rm -rf $(DOC_DIR)
 	@mkdir -p $(@D)
-	cp README.org $(DOC_DIR)/ffi.org
-	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
+	cp doc/* $(DOC_DIR)/
+	$(EMACS) -Q --batch -l org $(DOC_DIR)/emacs-ffi.org -f org-texinfo-export-to-texinfo
 .PHONY: docs-html
 docs-html: | $(DOC_DIR)/html
-$(DOC_DIR)/html: $(DOC_DIR)/ffi.texi
+$(DOC_DIR)/html: $(DOC_DIR)/emacs-ffi.texi
 	rm -rf $(DOC_DIR)/html
 	makeinfo --html -o $(DOC_DIR)/html $<
 
@@ -149,3 +150,20 @@ gsl-org: $(SO_FILES) $(EL_TARGETS)
 emacs-info:
 	@$(EMACS) --version
 	@$(EMACS) -Q --batch --eval='(message "%s" (with-temp-buffer (emacs-build-description) (buffer-string)))'
+
+# guix
+.PHONY: guix guix-profile guix-profile-update
+channels := ./.guix/channels.scm
+manifest := ./.guix/manifest.scm
+GUIX_PKG := emacs-ffi
+guix:
+	guix build -K -f guix.scm
+guix-profile:
+	@mkdir -p ~/.guix-extra-profiles/$(GUIX_PKG)
+	guix time-machine -C $(channels) -- \
+		package --fallback \
+		-p ~/.guix-extra-profiles/$(GUIX_PKG)/$(GUIX_PKG) \
+		-m $(manifest)
+guix-profile-update:
+	./.guix/etc/update-channels.scm > $(channels)
+	$(MAKE) guix-profile
