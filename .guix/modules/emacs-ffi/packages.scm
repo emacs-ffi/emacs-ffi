@@ -95,7 +95,10 @@ SOURCE-DIR is some path within an existing git repository."
                 (install-file "build/doc/emacs-ffi.info"
                               (string-append #$output "/share/info")))))))
       (inputs (list emacs-compat texinfo))
-      (propagated-inputs (list libltdl libffi))
+      (propagated-inputs (list libltdl libffi
+                               ;; for dev convenience, to run examples
+                               emacs-wrapper gsl
+                               coreutils-minimal))
       (home-page "https://github.com/emacs-ffi/emacs-ffi")
       (synopsis "FFI for Emacs based in libffi")
       (description "This package provides an FFI for Emacs.  It is based on
@@ -107,19 +110,22 @@ Emacs.  It is relatively full-featured, but for the time being low-level.")
   (package
     (inherit emacs)
     (name "emacs-wrapper")
+    (source #f)
+    (build-system trivial-build-system)
     (arguments
-     (substitute-keyword-arguments (package-arguments emacs)
-       ((#:phases phases)
-        #~(modify-phases #$phases
-            (add-after 'install 'wrap-executables
-              (lambda* (#:key inputs outputs #:allow-other-keys)
-                (let* ((out (assoc-ref outputs "out")))
-                  ;; Wrap all executables in 'bin/'
-                  (for-each
-                   (lambda (executable)
-                     (wrap-program executable
-                       '("LD_LIBRARY_PATH" ":" suffix
-                         ("${GUIX_ENVIRONMENT:+:${GUIX_ENVIRONMENT}/lib}"))))
-                   (find-files (string-append out "/bin") "emacs.*")))))))))))
+     (list #:modules '((guix build union)
+                       (guix build utils))
+           #:builder
+           #~(begin
+               (use-modules (guix build union)
+                            (guix build utils))
+               (union-build #$output (list #$emacs)))))
+    (native-search-paths
+     (append (package-native-search-paths emacs)
+             (list (search-path-specification
+                    (variable "LD_LIBRARY_PATH")
+                    (files (list "lib"))))))
+    (inputs (list emacs))
+    (synopsis "Emacs variant with LD_LIBRARY_PATH set based on profile")))
 
 emacs-ffi-dev
