@@ -124,9 +124,11 @@ $(OBJ_DIR)/%.o: %.c
 
 # Lint
 .PHONY: lint
+lint: ELDEV_SETUP = "(progn (advice-add 'package-refresh-contents :override \#'ignore)(advice-add 'package-lint--check-packages-installable :override \#'ignore))"
+lint: ELDEV_CMD = $(if $(GUIX_ENVIRONMENT),HOME=`pwd` eldev --use-emacsloadpath -S $(ELDEV_SETUP),eldev)
 lint:
-	eldev doctor
-	eldev lint
+	$(ELDEV_CMD) doctor
+	$(ELDEV_CMD) lint
 
 # examples using gsl
 # NOTE: below we assume that either LIBRARY_PATH or LD_LIBRARY_PATH includes

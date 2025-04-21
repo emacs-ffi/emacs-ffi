@@ -8,4 +8,6 @@
 (setf eldev-project-main-file "src/ffi.el"
       ;;eldev-project-source-dirs "src"
       )
+(setf eldev-standard-excludes
+      `(:or ,eldev-standard-excludes "./build"))
 
