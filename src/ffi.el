@@ -11,7 +11,7 @@
 ;; Keywords: extensions, internal, lisp, tools, unix
 ;; License: GNU General Public License >= 3
 ;; Package-Requires: ((emacs "25.1") (compat "28.1"))
-;; Package-Version: 0.2.1
+;; Package-Version: 0.2.1.50-git
 ;; URL: https://github.com/emacs-ffi/emacs-ffi
 ;; Homepage: https://emacs-ffi.github.io/emacs-ffi
 
