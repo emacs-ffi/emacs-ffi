@@ -27,6 +27,7 @@ An HTML version of this manual is browsable [[https://emacs-ffi.github.io/emacs-
 from [[https://raw.githubusercontent.com/tromey/emacs-ffi/5b92cdf4549c5a2d92395f483b0ef65bb85a8583/README.md][the README in the unmaintained upstream]].
 
 * Setting up the environment
+** For using the library
 
 The =libltdl= library is used to find libraries. You may need to set some
 environment variables to find your libraries. For the bash shell, you might need
@@ -37,11 +38,46 @@ to do something like this.
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/your/libraries
 #+END_SRC
 
-If you have the Guix package manager, [[file:manifest.scm][the included manifest file]] is sufficient
-for testing out the library in an isolated environment.  Evaluate something like
-the below in an interactive shell, in order to activate the environment.  Once
-that's done, the subsequent code snippets can be evaluated in an Emacs from the
-Guix shell environment.
+*** Installation
+=emacs-ffi= is not yet available in any package repositories, so you have to
+install it manually by cloning [[https://github.com/emacs-ffi/emacs-ffi][the emacs-ffi repository]], building and installing
+it via the =make install= target.
+
+Emacs-30 onwards supports =vc-use-package=.  As such, one may install
+=emacs-ffi= using something like below:
+#+begin_src emacs-lisp
+  (use-package package-vc :ensure nil :demand t
+    :custom
+    (package-vc-allow-build-commands t))
+
+  (use-package ffi :ensure nil
+    :unless noninteractive
+    :vc (ffi :url "https://github.com/emacs-ffi/emacs-ffi"
+             :branch "dev"
+             :rev :newest
+             :make "vc-install"
+             :lisp-dir "./src"
+             :doc "./src/emacs-ffi.texi"))
+#+end_src
+
+And finally, if you have the Guix package manager, [[file:guix.scm][the included guix.scm file]] is
+sufficient for testing out the library in an isolated environment.  Evaluate
+something like the below in an interactive shell, in order to activate the
+environment.  Once that's done, the subsequent code snippets can be evaluated in
+an Emacs from the Guix shell environment.
+
+#+begin_src bash
+  guix shell --pure -CPWN \
+       -E '.*GTK.*|.*XDG.*|.*DISPLAY.*|TERM|INSIDE_EMACS' \
+       -m guix.scm
+#+end_src
+
+** For developing the library
+The [[https://guix.gnu.org/cookbook/en/html_node/The-Repository-as-a-Channel.html][repository is in fact a Guix channel]] and it also provides a [[file:manifest.scm][manifest.scm
+file]] which can be used to instantiate a development environment (i.e., an
+environment where the various =make= targets in the repository can be
+evaluated).  This is the environment to use if someone wants to contribute
+changes to the package.
 
 #+begin_src bash
   guix shell --pure -CPWN \
