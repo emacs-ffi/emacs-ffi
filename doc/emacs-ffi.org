@@ -1,7 +1,7 @@
 #+title: FFI for Emacs
 #+author: Tom Tromey
 #+SUBAUTHOR: John Kitchin
-#+subtitle: for version 0.2.0
+#+subtitle: for version 0.2.0.50-git
 #+TEXINFO_DIR_CATEGORY: Emacs
 #+TEXINFO_DIR_TITLE: Emacs FFI: (emacs-ffi)
 #+TEXINFO_DIR_DESC: Dynamic module based FFI for Emacs
@@ -17,7 +17,7 @@ This dynamic module provides an FFI for Emacs.  It is based on =libffi= and
 relies on the dynamic module support in order to be loaded into Emacs. It is
 relatively full-featured, but for the time is low-level.
 
-This manual is for =ffi.el= version 0.2.0.
+This manual is for =ffi.el= version 0.2.0.50-git.
 
 *                                                                  :noexport:
 - =master= branch status: [[https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml][file:https://github.com/emacs-ffi/emacs-ffi/actions/workflows/ffi.yml/badge.svg?branch=master]]
