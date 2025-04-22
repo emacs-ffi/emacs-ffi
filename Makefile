@@ -27,15 +27,21 @@ CFLAGS += $(shell pkg-config --cflags libffi)
 LDFLAGS += -shared
 LIBS = -lffi -lltdl
 
+ifdef USE_BUILTIN_LIB
+	EMACS_LIB_LOAD =
+else
+	EMACS_LIB_LOAD = -L $(CURDIR)/$(LIB_DIR)
+endif
+
 # Set this to debug make check.
 #GDB = gdb --args
 
 # Directories
-SRC_DIR := src
+SRC_DIR = src
 TEST_DIR = tests
-BUILD_DIR := build
+BUILD_DIR = build
 DOC_DIR = $(BUILD_DIR)/doc
-OBJ_DIR := $(BUILD_DIR)/obj
+OBJ_DIR = $(BUILD_DIR)/obj
 LIB_DIR = $(BUILD_DIR)/lib
 # Sources
 SRC_FILES := $(wildcard $(SRC_DIR)/*.c $(TEST_DIR)/*.c)
@@ -62,8 +68,6 @@ DOC_TARGETS = $(DOC_DIR)/emacs-ffi.texi $(DOC_DIR)/emacs-ffi.info
 .PHONY: all check clean
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)
 
-# FIXME: allow user to decide when  -L $(CURDIR)/$(LIB_DIR) is set
-
 check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 	$(call run-test,Lexical + Interpreted,LEXICAL,el)
 	$(call run-test,Dynamic + Interpreted,DYNAMIC,el)
@@ -72,7 +76,7 @@ check: $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS)
 define run-test
 	@echo "Testing: $(1)"
 	$(GDB) $(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) \
+	  $(EMACS_LIB_LOAD) \
 	  -L $(CURDIR)/$(BUILD_DIR)/$(TEST_DIR) \
 	  $(foreach name,$(patsubst %.elc,%.$(3),$(TEST_ELC_$(2))),-l $(name)) \
 	  -f ert-run-tests-batch-and-exit
@@ -169,13 +173,13 @@ lint:
 gsl: $(SO_FILES) $(EL_TARGETS)
 	LD_LIBRARY_PATH=${LIBRARY_PATH}:${LD_LIBRARY_PATH} \
 	$(GDB) $(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) \
+	  $(EMACS_LIB_LOAD) \
 	  -l examples/gsl-ffi.el
 
 gsl-org: $(SO_FILES) $(EL_TARGETS)
 	LD_LIBRARY_PATH=${LIBRARY_PATH}:${LD_LIBRARY_PATH} \
 	$(GDB) $(EMACS) -Q --batch \
-	  -L $(CURDIR)/$(LIB_DIR) \
+	  $(EMACS_LIB_LOAD) \
 	  --eval="(progn (find-file \"examples/gsl-ffi.org\") (setq org-confirm-babel-evaluate nil) (org-babel-execute-buffer))"
 
 # diagnostics
