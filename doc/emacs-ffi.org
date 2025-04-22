@@ -464,9 +464,10 @@ Currently, all type conversions work the same in both directions.
   fields are the indicated types.
 
 * Examples
+#+LINK: github-raw-dev https://raw.githubusercontent.com/emacs-ffi/emacs-ffi/refs/heads/dev/
 
-- See [[./examples/gsl-ffi.el]] for an Emacs-lisp script.
-- See [[./examples/gsl-ffi.org]] for a literate program in org-mode.
+- See [[github-raw-dev:./examples/gsl-ffi.el][./examples/gsl-ffi.el]] for an Emacs-lisp script.
+- See [[github-raw-dev:./examples/gsl-ffi.org][./examples/gsl-ffi.org]] for a literate program in org-mode.
 
 * Outstanding issues, limitations, and caveats
 
