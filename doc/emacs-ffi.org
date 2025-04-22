@@ -87,7 +87,9 @@ changes to the package.
 
 * Using ffi.el
 
-Make sure that ~ffi.el~ is on your load path. Then just require it.
+Make sure that ~ffi.el~ is on your load path. Then just require it.  Assuming
+one is working in a checkout of the repository, evaluating the below snippet
+from an Emacs buffer visiting this Org file should do the right thing.
 
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'load-path
