@@ -78,6 +78,27 @@ TEST_ELC_TARGETS = $(filter $(BUILD_DIR)/$(TEST_DIR)/%, $(ELC_TARGETS))
 TEST_ELC_DYNAMIC = $(filter %-dynamic.elc, $(TEST_ELC_TARGETS))
 TEST_ELC_LEXICAL = $(filter %-lexical.elc, $(TEST_ELC_TARGETS))
 
+
+# dynamic module package
+MODULE_VERSION := $(shell sed -n 's/^;; Package-Version: //p' $(SRC_DIR)/ffi.el)
+MODULE_PKG_VERSION := $(shell $(EMACS) -Q --batch --eval '(progn (require (intern "package")) (princ (package-version-join (version-to-list "$(MODULE_VERSION)"))))')
+MODULE := ffi
+MODULE_BASENAME := $(MODULE)-$(MODULE_PKG_VERSION)
+MODULE_PKG_EL := $(MODULE_BASENAME)/$(MODULE)-pkg.el
+MODULE_TAR := $(MODULE_BASENAME).tar
+
+.PHONY: module install
+module: all
+	@rm -rf $(BUILD_DIR)/$(MODULE_BASENAME)
+	@mkdir -p $(BUILD_DIR)/$(MODULE_BASENAME)
+	cp $(LIB_DIR)/*.el $(LIB_DIR)/*.so $(DOC_DIR)/*.info $(BUILD_DIR)/$(MODULE_BASENAME)
+	@echo ";; -*- no-byte-compile: t; lexical-binding: nil -*-" > $(BUILD_DIR)/$(MODULE_PKG_EL)
+	@echo "(define-package \"$(MODULE)\" \"$(MODULE_PKG_VERSION)\" \"Emacs FFI dynamic module\")" >> $(BUILD_DIR)/$(MODULE_PKG_EL)
+	tar cvf $(BUILD_DIR)/$(MODULE_TAR) -C $(BUILD_DIR) $(MODULE_BASENAME)
+
+install: module
+	emacsclient -e '(package-install-file "$(BUILD_DIR)/$(MODULE_TAR)")'
+
 clean:
 	-rm -rf $(BUILD_DIR)
 
