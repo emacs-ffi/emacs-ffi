@@ -3,3 +3,10 @@ config.mk
 build/
 ltximg/
 /.eldev/
+/src/*.so
+/src/*.texi
+/*.el
+*.elc
+/*.info
+/dir
+/src/*-autoloads.el

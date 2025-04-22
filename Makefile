@@ -57,7 +57,7 @@ SRC_EL_TARGETS = $(patsubst $(SRC_DIR)/%,$(LIB_DIR)/%.el, \
 EL_TARGETS = $(TEST_EL_TARGETS) $(SRC_EL_TARGETS)
 ELC_TARGETS = $(patsubst %.el,%.elc, $(EL_TARGETS))
 # Documentation targets
-DOC_TARGETS = $(DOC_DIR)/ffi.texi $(DOC_DIR)/ffi.info
+DOC_TARGETS = $(DOC_DIR)/emacs-ffi.texi $(DOC_DIR)/emacs-ffi.info
 
 .PHONY: all check clean
 all: $(OBJ_FILES) $(SO_FILES) $(EL_TARGETS) $(ELC_TARGETS) $(DOC_TARGETS)
@@ -78,17 +78,46 @@ TEST_ELC_TARGETS = $(filter $(BUILD_DIR)/$(TEST_DIR)/%, $(ELC_TARGETS))
 TEST_ELC_DYNAMIC = $(filter %-dynamic.elc, $(TEST_ELC_TARGETS))
 TEST_ELC_LEXICAL = $(filter %-lexical.elc, $(TEST_ELC_TARGETS))
 
+
+# dynamic module package
+MODULE_VERSION := $(shell sed -n 's/^;; Package-Version: //p' $(SRC_DIR)/ffi.el)
+MODULE_PKG_VERSION := $(shell $(EMACS) -Q --batch --eval '(progn (require (intern "package")) (princ (package-version-join (version-to-list "$(MODULE_VERSION)"))))')
+MODULE := ffi
+MODULE_BASENAME := $(MODULE)-$(MODULE_PKG_VERSION)
+MODULE_PKG_EL := $(MODULE_BASENAME)/$(MODULE)-pkg.el
+MODULE_TAR := $(MODULE_BASENAME).tar
+
+.PHONY: module install vc-install
+module: all
+	@rm -rf $(BUILD_DIR)/$(MODULE_BASENAME)
+	@mkdir -p $(BUILD_DIR)/$(MODULE_BASENAME)
+	cp $(LIB_DIR)/*.el $(LIB_DIR)/*.so $(DOC_DIR)/*.info $(BUILD_DIR)/$(MODULE_BASENAME)
+	@echo ";; -*- no-byte-compile: t; lexical-binding: nil -*-" > $(BUILD_DIR)/$(MODULE_PKG_EL)
+	@echo "(define-package \"$(MODULE)\" \"$(MODULE_PKG_VERSION)\" \"Emacs FFI dynamic module\")" >> $(BUILD_DIR)/$(MODULE_PKG_EL)
+	tar cvf $(BUILD_DIR)/$(MODULE_TAR) -C $(BUILD_DIR) $(MODULE_BASENAME)
+
+install: module
+	emacsclient -e '(package-install-file "$(BUILD_DIR)/$(MODULE_TAR)")'
+vc-install: all
+	cp $(LIB_DIR)/*.so $(SRC_DIR)/
+	cp $(DOC_DIR)/*.texi $(SRC_DIR)/
+	ln -s $(DOC_DIR)/emacs-ffi.info ./emacs-ffi.info
+
 clean:
 	-rm -rf $(BUILD_DIR)
+	-rm -f $(SRC_DIR)/*.so
+	-rm -f $(SRC_DIR)/*.texi
+	-rm -f ./emacs-ffi.info
 
-$(DOC_DIR)/ffi.info: $(DOC_DIR)/ffi.texi
-$(DOC_DIR)/ffi.texi: README.org
+$(DOC_DIR)/emacs-ffi.info: $(DOC_DIR)/emacs-ffi.texi
+$(DOC_DIR)/emacs-ffi.texi: doc/emacs-ffi.org
+	@rm -rf $(DOC_DIR)
 	@mkdir -p $(@D)
-	cp README.org $(DOC_DIR)/ffi.org
-	$(EMACS) -Q --batch -l org $(DOC_DIR)/ffi.org -f org-texinfo-export-to-texinfo
+	cp doc/* $(DOC_DIR)/
+	$(EMACS) -Q --batch -l org $(DOC_DIR)/emacs-ffi.org -f org-texinfo-export-to-texinfo
 .PHONY: docs-html
 docs-html: | $(DOC_DIR)/html
-$(DOC_DIR)/html: $(DOC_DIR)/ffi.texi
+$(DOC_DIR)/html: $(DOC_DIR)/emacs-ffi.texi
 	rm -rf $(DOC_DIR)/html
 	makeinfo --html -o $(DOC_DIR)/html $<
 
@@ -124,9 +153,11 @@ $(OBJ_DIR)/%.o: %.c
 
 # Lint
 .PHONY: lint
+lint: ELDEV_SETUP = "(progn (advice-add 'package-refresh-contents :override \#'ignore)(advice-add 'package-lint--check-packages-installable :override \#'ignore))"
+lint: ELDEV_CMD = $(if $(GUIX_ENVIRONMENT),HOME=`pwd` eldev --use-emacsloadpath -S $(ELDEV_SETUP),eldev)
 lint:
-	eldev doctor
-	eldev lint
+	$(ELDEV_CMD) doctor
+	$(ELDEV_CMD) lint
 
 # examples using gsl
 # NOTE: below we assume that either LIBRARY_PATH or LD_LIBRARY_PATH includes
@@ -147,3 +178,20 @@ gsl-org: $(SO_FILES) $(EL_TARGETS)
 emacs-info:
 	@$(EMACS) --version
 	@$(EMACS) -Q --batch --eval='(message "%s" (with-temp-buffer (emacs-build-description) (buffer-string)))'
+
+# guix
+.PHONY: guix guix-profile guix-profile-update
+channels := ./.guix/channels.scm
+manifest := ./.guix/manifest.scm
+GUIX_PKG := emacs-ffi
+guix:
+	guix build -K -f guix.scm
+guix-profile:
+	@mkdir -p ~/.guix-extra-profiles/$(GUIX_PKG)
+	guix time-machine -C $(channels) -- \
+		package --fallback \
+		-p ~/.guix-extra-profiles/$(GUIX_PKG)/$(GUIX_PKG) \
+		-m $(manifest)
+guix-profile-update:
+	./.guix/etc/update-channels.scm > $(channels)
+	$(MAKE) guix-profile
