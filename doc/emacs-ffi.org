@@ -10,6 +10,8 @@
 # TEXINFO_DIR_NAME, so include that as well.
 #+TEXINFO_DIR_NAME: Emacs FFI: (emacs-ffi)
 
+# This is seemingly a no-op, but noting here for documentation.
+#+TEXINFO_FILENAME: emacs-ffi.info
 
 This dynamic module provides an FFI for Emacs.  It is based on =libffi= and
 relies on the dynamic module support in order to be loaded into Emacs. It is

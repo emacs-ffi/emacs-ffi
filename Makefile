@@ -87,7 +87,7 @@ MODULE_BASENAME := $(MODULE)-$(MODULE_PKG_VERSION)
 MODULE_PKG_EL := $(MODULE_BASENAME)/$(MODULE)-pkg.el
 MODULE_TAR := $(MODULE_BASENAME).tar
 
-.PHONY: module install
+.PHONY: module install vc-install
 module: all
 	@rm -rf $(BUILD_DIR)/$(MODULE_BASENAME)
 	@mkdir -p $(BUILD_DIR)/$(MODULE_BASENAME)
@@ -98,9 +98,16 @@ module: all
 
 install: module
 	emacsclient -e '(package-install-file "$(BUILD_DIR)/$(MODULE_TAR)")'
+vc-install: all
+	cp $(LIB_DIR)/*.so $(SRC_DIR)/
+	cp $(DOC_DIR)/*.texi $(SRC_DIR)/
+	ln -s $(DOC_DIR)/emacs-ffi.info ./emacs-ffi.info
 
 clean:
 	-rm -rf $(BUILD_DIR)
+	-rm -f $(SRC_DIR)/*.so
+	-rm -f $(SRC_DIR)/*.texi
+	-rm -f ./emacs-ffi.info
 
 $(DOC_DIR)/emacs-ffi.info: $(DOC_DIR)/emacs-ffi.texi
 $(DOC_DIR)/emacs-ffi.texi: doc/emacs-ffi.org
