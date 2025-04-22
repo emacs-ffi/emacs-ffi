@@ -52,6 +52,9 @@ SOURCE-DIR is some path within an existing git repository."
 ;;;; emacs-ffi-dev
 
 (define-public emacs-ffi-dev
+  "Package for the development version of `emacs-ffi'.
+For being able to run the examples, it propagates libgsl and Emacs and ensures
+that LD_LIBRARY_PATH is set within the Emacs instance."
   (let* ((source-dir (emacs-batch-script
                       '(princ
                         (directory-file-name
@@ -94,11 +97,11 @@ SOURCE-DIR is some path within an existing git repository."
               (lambda _
                 (install-file "build/doc/emacs-ffi.info"
                               (string-append #$output "/share/info")))))))
-      (inputs (list emacs-compat texinfo))
-      (propagated-inputs (list libltdl libffi
+      (inputs (list emacs-compat libltdl libffi))
+      (native-inputs (list texinfo))
+      (propagated-inputs (list coreutils-minimal
                                ;; for dev convenience, to run examples
-                               emacs-wrapper gsl
-                               coreutils-minimal))
+                               emacs-ffi-dev-emacs-wrapper gsl))
       (home-page "https://github.com/emacs-ffi/emacs-ffi")
       (synopsis "FFI for Emacs based in libffi")
       (description "This package provides an FFI for Emacs.  It is based on
@@ -106,10 +109,12 @@ libffi and relies on the dynamic module support in order to be loaded into
 Emacs.  It is relatively full-featured, but for the time being low-level.")
       (license license:gpl3+))))
 
-(define-public emacs-wrapper
+(define-public emacs-ffi-dev-emacs-wrapper
+  "Emacs wrapper that ensures the libraries in Guix environment are accessible
+via LD_LIBRARY_PATH."
   (package
     (inherit emacs)
-    (name "emacs-wrapper")
+    (name "emacs-ffi-dev-emacs-wrapper")
     (source #f)
     (build-system trivial-build-system)
     (arguments
