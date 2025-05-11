@@ -108,7 +108,7 @@ install: module
 vc-install: all
 	cp $(LIB_DIR)/*.so $(SRC_DIR)/
 	cp $(DOC_DIR)/*.texi $(SRC_DIR)/
-	ln -s $(DOC_DIR)/emacs-ffi.info ./emacs-ffi.info
+	ln -sf $(DOC_DIR)/emacs-ffi.info ./emacs-ffi.info
 
 clean:
 	-rm -rf $(BUILD_DIR)
