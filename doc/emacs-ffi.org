@@ -39,19 +39,12 @@ to do something like this.
 #+END_SRC
 
 *** Installation
-=emacs-ffi= is not yet available in any package repositories, so you have to
-install it manually by cloning [[https://github.com/emacs-ffi/emacs-ffi][the emacs-ffi repository]], building and installing
-it via the =make install= target.  To confirm that the installation is working
-as intended, one can follow the following steps:
-1. Ensure that the tests pass using compiled package via =make check=.
-2. If above succeeds, ensure that the tests pass using the version of the
-   package that's actually installed via:
-   #+begin_src sh
-     make check USE_BUILTIN_LIB=1 EMACS="emacs -L /path/to/ffi/installation"
-   #+end_src
+=emacs-ffi= is not yet available in any ELPA archives.  In Emacs 30 (and later),
+one can use the builtin =use-package= with =:vc= keyword support.  In older
+versions of Emacs, the installation is done manually.
 
-Emacs-30 onwards supports =vc-use-package=.  As such, one may install
-=emacs-ffi= using something like below:
+For Emacs 30 and later, one may install =emacs-ffi= using something like the
+below:
 #+begin_src emacs-lisp
   (use-package package-vc :ensure nil :demand t
     :custom
@@ -60,23 +53,33 @@ Emacs-30 onwards supports =vc-use-package=.  As such, one may install
   (use-package ffi :ensure nil
     :unless noninteractive
     :vc (ffi :url "https://github.com/emacs-ffi/emacs-ffi"
-             :branch "dev"
+             :branch "master" ;; use branch "dev" for latest pre-release
              :rev :newest
              :make "vc-install"
              :lisp-dir "./src"
              :doc "./src/emacs-ffi.texi"))
 #+end_src
 
-And finally, if you have the Guix package manager, [[file:guix.scm][the included guix.scm file]] is
-sufficient for testing out the library in an isolated environment.  Evaluate
-something like the below in an interactive shell, in order to activate the
-environment.  Once that's done, the subsequent code snippets can be evaluated in
-an Emacs from the Guix shell environment.
+For Emacs-29 and earlier, proceed by cloning [[https://github.com/emacs-ffi/emacs-ffi][the emacs-ffi repository]].  Then
+build and install the package via the =make install= target.  To confirm that
+the installation is working as intended:
+1. Ensure that the tests pass using compiled package via =make check=.
+2. If the above succeeds, ensure that the tests pass using the version of the
+   package that's actually installed via:
+   #+begin_src sh
+     make check USE_BUILTIN_LIB=1 EMACS="emacs -L /path/to/ffi/installation"
+   #+end_src
 
+Finally, if you have the Guix package manager, you can install a relatively
+recent release via the =emacs-ffi= package. Additionally, [[file:guix.scm][the guix.scm file]] in
+the repository is sufficient for testing out the development version of the
+library in an isolated environment. To activate this environment, evaluate
+something like the below in an interactive shell at the root of the repository
+checkout. Once that's done, the subsequent code snippets can be evaluated in an
+Emacs instance started from the Guix shell environment.
 #+begin_src bash
-  guix shell --pure -CPWN \
-       -E '.*GTK.*|.*XDG.*|.*DISPLAY.*|TERM|INSIDE_EMACS' \
-       -m guix.scm
+  guix shell --pure -CPWN \ -E '.*GTK.*|.*XDG.*|.*DISPLAY.*|TERM|INSIDE_EMACS' \
+  -m guix.scm
 #+end_src
 
 ** For developing the library
